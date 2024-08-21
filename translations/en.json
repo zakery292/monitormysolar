@@ -1,0 +1,24 @@
+{
+    "config": {
+        "error": {
+            "cannot_connect": "Cannot connect to the MQTT server. Please check your settings."
+        },
+        "abort": {
+            "already_configured": "Inverter is already configured"
+        },
+        "step": {
+            "user": {
+                "title": "Inverter2MQTT Configuration",
+                "description": "Please enter the following information to set up your inverter.",
+                "data": {
+                    "inverter_brand": "Inverter Brand",
+                    "mqtt_server": "MQTT Server",
+                    "mqtt_port": "MQTT Port",
+                    "mqtt_username": "MQTT Username",
+                    "mqtt_password": "MQTT Password",
+                    "dongle_id": "Dongle ID"
+                }
+            }
+        }
+    }
+}

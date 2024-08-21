@@ -1,0 +1,22 @@
+{
+"es": {
+        "title": "Configuración de Inverter MQTT",
+        "step": {
+            "user": {
+                "data": {
+                    "inverter_brand": "Marca del Inversor",
+                    "mqtt_server": "Servidor MQTT",
+                    "mqtt_port": "Puerto MQTT",
+                    "mqtt_username": "Nombre de usuario MQTT",
+                    "mqtt_password": "Contraseña MQTT",
+                    "dongle_id": "ID del Dongle"
+                },
+                "description": "Por favor, ingrese la siguiente información para configurar su inversor.",
+                "title": "Configuración de Inverter MQTT"
+            }
+        },
+        "error": {
+            "cannot_connect": "No se puede conectar al servidor MQTT. Por favor, revise sus configuraciones."
+        }
+    }
+}

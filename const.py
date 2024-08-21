@@ -20,7 +20,7 @@ from homeassistant.components.sensor import (
 Logger: Logger = getLogger(__package__)
 
 # Domain for the integration
-DOMAIN = "inverter_mqtt"
+DOMAIN = "monitorMySolar"
 
 
 FIRMWARE_CODES = {
@@ -254,7 +254,7 @@ ENTITIES = {
                     {"name": "CT Sample Ratio", "type": "select", "unique_id": "CTSampleRatio", "options": ["1:1000", "1:3000"]},
                     {"name": "Clear Parallel Alarm", "type": "select", "unique_id": "ClearParallelAlarm", "options": ["N/A", "Clear" ]},
 
-                    # Add more selects as needed
+                    
                 ],
                 "holdbank4": [
                     {"name": "00:00 -- 00:30", "type": "select", "unique_id": "Time0", "options": ["Does Not Operate", "AC Charge", "PV Charge", "Discharge"]},

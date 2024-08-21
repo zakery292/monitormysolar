@@ -1,113 +1,165 @@
-# __init__.py
-import logging
+import asyncio
 import json
+import logging
+import paho.mqtt.client as mqtt_client
 from homeassistant.core import HomeAssistant
-from homeassistant.components.mqtt import async_subscribe
-from .const import DOMAIN, SENSORS
+from homeassistant.const import Platform
+from .const import DOMAIN, ENTITIES, DEFAULT_MQTT_SERVER, DEFAULT_MQTT_PORT
+from .mqtt import MQTTHandler
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup(hass: HomeAssistant, config: dict):
-    """Set up the Inverter MQTT component."""
-    return True
 
 async def async_setup_entry(hass: HomeAssistant, entry):
-    """Set up Inverter MQTT from a config entry."""
-    mqtt_server = entry.data.get("mqtt_server")
-    mqtt_port = entry.data.get("mqtt_port")
-    mqtt_username = entry.data.get("mqtt_username")
-    mqtt_password = entry.data.get("mqtt_password")
-    dongle_id = entry.data.get("dongle_id")
+    """Set up the Inverter2MQTT component from a config entry."""
+    config = entry.data
+    inverter_brand = config.get("inverter_brand")
+    dongle_id = config.get("dongle_id")
+    mqtt_server = config.get("mqtt_server", DEFAULT_MQTT_SERVER)
+    mqtt_port = config.get("mqtt_port", DEFAULT_MQTT_PORT)
+    mqtt_username = config.get("mqtt_username", "")
+    mqtt_password = config.get("mqtt_password", "")
 
-    # Subscribe to the necessary topics
-    async def message_received(message):
-        """Handle new MQTT messages."""
-        try:
-            payload = json.loads(message.payload)
-            _LOGGER.warning(f'Message received on topic {message.topic}: {payload}')
-        except json.JSONDecodeError as e:
-            _LOGGER.error(f"Failed to decode JSON payload: {e}")
-            _LOGGER.error(f"Message payload: {message.payload}")
-            return
+    _LOGGER.info("Setting up Inverter2MQTT for %s", inverter_brand)
 
-        if 'dongle' in payload and 'hold' in payload['dongle']:
-            await handle_hold_payload(hass, dongle_id, payload['dongle']['hold'])
-        else:
-            _LOGGER.warning("No 'hold' key found in payload")
+    brand_entities = ENTITIES.get(inverter_brand, {})
+    if not brand_entities:
+        _LOGGER.error("No entities defined for inverter brand: %s", inverter_brand)
+        return False
 
-        if 'dongle' in payload and 'input' in payload['dongle']:
-            await handle_input_payload(hass, dongle_id, payload['dongle']['input'])
-        else:
-            _LOGGER.warning("No 'input' key found in payload")
+    # Determine if using HA MQTT or Paho MQTT
+    use_ha_mqtt = mqtt_server == DEFAULT_MQTT_SERVER
 
-    async def handle_hold_payload(hass: HomeAssistant, dongle_id, hold_payload):
-        """Handle the 'hold' payload."""
-        for entity, value in hold_payload.items():
-            if entity.startswith('switch'):
-                event_type = f"{DOMAIN}_switch_updated"
-            elif entity.startswith('AC_Charge_Start1') or entity.startswith('AC_Charge_End1'):
-                base_entity = entity.rsplit('_', 1)[0]
-                event_type = f"{DOMAIN}_time_updated"
-                hh_key = f"{base_entity}_HH"
-                mm_key = f"{base_entity}_MM"
-                _LOGGER.warning(f'Updating time entity {base_entity} with HH: {hh_key}, MM: {mm_key}')
-                if hh_key in hold_payload and mm_key in hold_payload:
-                    hh = hold_payload[hh_key]
-                    mm = hold_payload[mm_key]
-                    hass.bus.fire(event_type, {
-                        "entity": base_entity,
-                        "hh": hh,
-                        "mm": mm
-                    })
-                    _LOGGER.warning(f'Fired event to set time entity {base_entity} to {hh:02}:{mm:02}')
-                else:
-                    _LOGGER.warning(f'Missing HH or MM keys for {entity}')
-                continue
+    # Initialize and set up the MQTT handler
+    mqtt_handler = MQTTHandler(hass, use_ha_mqtt)
+    await mqtt_handler.async_setup(entry)
+    hass.data[DOMAIN] = {"mqtt_handler": mqtt_handler}
+    client = mqtt_handler.client
+
+    # Subscribe to topics and request firmware code if needed
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            _LOGGER.info("Connected to MQTT server")
+            for entity_type, banks in brand_entities.items():
+                for bank_name in banks.keys():
+                    topic = f"{dongle_id}/{bank_name}"
+                    client.subscribe(topic)
+                    _LOGGER.info("Subscribed to topic: %s", topic)
+            client.subscribe(f"{dongle_id}/firmwarecode/response")
+            _LOGGER.info("Subscribed to firmwarecode/response topic")
+            client.subscribe(f"({dongle_id}/update)")
+            _LOGGER.info("Subscribed to update topic")
+            client.subscribe(f"({dongle_id}/response)")
+            _LOGGER.info("Subscribed to response topic")
+            firmware_code = config.get("firmware_code")
+            if firmware_code:
+                hass.data[DOMAIN]["firmware_code"] = firmware_code
+                _LOGGER.info(f"Firmware code found in config entry: {firmware_code}")
+                asyncio.run_coroutine_threadsafe(
+                    setup_entities(
+                        hass, entry, inverter_brand, dongle_id, firmware_code
+                    ),
+                    hass.loop,
+                )
             else:
-                event_type = f"{DOMAIN}_sensor_updated"
+                _LOGGER.info("Requesting firmware code...")
+                client.publish(f"{dongle_id}/firmwarecode/request", "")
+        else:
+            _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)
 
-            _LOGGER.warning(f'Firing event to update state for {entity} to {value}')
-            hass.bus.fire(event_type, {
-                "entity": entity,
-                "value": value
-            })
+    def on_message(client, userdata, msg):
+        if msg.topic == f"{dongle_id}/firmwarecode/response":
+            try:
+                data = json.loads(msg.payload)
+                firmware_code = data.get("FWCode")
+                if firmware_code:
+                    hass.data[DOMAIN]["firmware_code"] = firmware_code
+                    _LOGGER.info(f"Firmware code received: {firmware_code}")
+                    hass.config_entries.async_update_entry(
+                        entry, data={**entry.data, "firmware_code": firmware_code}
+                    )
+                    asyncio.run_coroutine_threadsafe(
+                        setup_entities(
+                            hass, entry, inverter_brand, dongle_id, firmware_code
+                        ),
+                        hass.loop,
+                    )
+                else:
+                    _LOGGER.error("No firmware code found in response")
+            except json.JSONDecodeError:
+                _LOGGER.error("Failed to decode JSON from response")
+        else:
+            asyncio.run_coroutine_threadsafe(
+                process_message(hass, msg.payload, dongle_id, inverter_brand),
+                hass.loop,
+            )
 
-    async def handle_input_payload(hass: HomeAssistant, dongle_id, input_payload):
-        """Handle the 'input' payload."""
-        _LOGGER.warning(f'Handling input payload: {input_payload}')
-        for entity, value in input_payload.items():
-            event_type = f"{DOMAIN}_sensor_updated"
-            _LOGGER.warning(f'Firing event to update state for {entity} to {value}')
-            hass.bus.fire(event_type, {
-                "entity": entity,
-                "value": value
-            })
+    client.on_connect = on_connect
+    client.on_message = on_message
+    client.loop_start()
 
-    await async_subscribe(hass, f"{dongle_id}/input", message_received)
-    _LOGGER.info(f"Subscribed to {dongle_id}/input")
-    await async_subscribe(hass, f"{dongle_id}/hold", message_received)
-    _LOGGER.info(f"Subscribed to {dongle_id}/hold")
-
-    # Forward the setup to the platform
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "sensor")
-    )
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "switch")
-    )
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "number")
-    )
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "time")
-    )
+    # Wait for the firmware code response if it wasn't found in config entry
+    if "firmware_code" not in config:
+        await asyncio.sleep(10)
+        if "firmware_code" not in hass.data[DOMAIN]:
+            _LOGGER.error("Firmware code response not received within timeout")
+            return False
 
     return True
 
-async def async_unload_entry(hass: HomeAssistant, entry):
-    """Unload a config entry."""
-    await hass.config_entries.async_forward_entry_unload(entry, "sensor")
-    await hass.config_entries.async_forward_entry_unload(entry, "switch")
-    await hass.config_entries.async_forward_entry_unload(entry, "number")
-    await hass.config_entries.async_forward_entry_unload(entry, "time")
-    return True
+
+async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
+    """Set up the entities based on the firmware code."""
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, Platform.SENSOR)
+    )
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, Platform.SWITCH)
+    )
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, Platform.NUMBER)
+    )
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, Platform.TIME)
+    )
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, Platform.SELECT)
+    )
+
+
+def determine_entity_type(entity_id_suffix, inverter_brand):
+    """Determine the entity type based on the entity_id_suffix."""
+    brand_entities = ENTITIES.get(inverter_brand, {})
+    if not brand_entities:
+        return "sensor"
+
+    for entity_type in ["sensor", "switch", "number", "time", "time_hhmm"]:
+        if entity_type in brand_entities:
+            for bank_name, entities in brand_entities[entity_type].items():
+                for entity in entities:
+                    if entity["unique_id"] == entity_id_suffix:
+                        if entity_type == "time_hhmm":
+                            return "time"
+                        return entity_type
+
+    return "sensor"  # Default to sensor if no match is found
+
+
+async def process_message(hass, payload, dongle_id, inverter_brand):
+    """Process incoming MQTT message and update entity states."""
+    try:
+        data = json.loads(payload)
+    except ValueError:
+        _LOGGER.error("Invalid JSON payload received")
+        return
+
+    for entity_id_suffix, state in data.items():
+        entity_type = determine_entity_type(entity_id_suffix, inverter_brand)
+        entity_id = (
+            f"{entity_type}.{dongle_id}_{entity_id_suffix.lower().replace('-', '_')}"
+        )
+        _LOGGER.debug(f"Firing event for entity {entity_id} with state {state}")
+        hass.bus.async_fire(
+            f"{DOMAIN}_{entity_type}_updated", {"entity": entity_id, "value": state}
+        )
+        _LOGGER.debug(f"Event fired for entity {entity_id} with state {state}")

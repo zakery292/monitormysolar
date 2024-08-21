@@ -1,35 +1,49 @@
 import logging
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import callback
-from homeassistant.helpers.event import async_call_later
-from .const import DOMAIN, SENSORS
+from .const import DOMAIN, ENTITIES, FIRMWARE_CODES
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(hass, entry, async_add_entities):
     inverter_brand = entry.data.get("inverter_brand")
-    dongle_id = entry.data.get("dongle_id")
-    switches = [sensor for sensor in SENSORS.get(inverter_brand, []) if sensor["type"] == "switch"]
+    dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
+    brand_entities = ENTITIES.get(inverter_brand, {})
+    switch_config = brand_entities.get("switch", {})
+    firmware_code = entry.data.get("firmware_code")
+    device_type = FIRMWARE_CODES.get(firmware_code, {}).get("Device_Type", "")
 
-    entities = [InverterSwitch(sensor, entry, dongle_id, hass) for sensor in switches]
+    entities = []
+    for bank_name, switches in switch_config.items():
+        for switch in switches:
+            allowed_device_types = switch.get("allowed_device_types", [])
+            if not allowed_device_types or device_type in allowed_device_types:
+                try:
+                    entities.append(
+                        InverterSwitch(switch, hass, entry, dongle_id, bank_name)
+                    )
+                except Exception as e:
+                    _LOGGER.error(f"Error setting up switch {switch}: {e}")
+
     async_add_entities(entities, True)
 
+
 class InverterSwitch(SwitchEntity):
-    def __init__(self, sensor_info, entry, dongle_id, hass):
-        self._name = sensor_info["name"]
-        self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}"
+    def __init__(self, entity_info, hass, entry, dongle_id, bank_name):
+        """Initialize the switch."""
+        _LOGGER.debug(f"Initializing switch with info: {entity_info}")
+        self.entity_info = entity_info
+        self._name = entity_info["name"]
+        self._unique_id = f"{entry.entry_id}_{entity_info['unique_id']}".lower()
         self._state = False
-        self._dongle_id = dongle_id
-        self.entity_id = f"switch.{dongle_id}_{sensor_info['unique_id']}"
+        self._dongle_id = dongle_id.lower().replace("-", "_")
+        self._device_id = dongle_id.lower().replace("-", "_")
+        self._entity_type = entity_info["unique_id"]
+        self._bank_name = bank_name
+        self.entity_id = f"switch.{self._device_id}_{self._entity_type.lower()}"
         self.hass = hass
-
-    # async def async_added_to_hass(self):
-    #     """Call when entity is added to hass."""
-    #     _LOGGER.warning(f"Adding listener for {self.entity_id}")
-    #     async_call_later(self.hass, 0, self._register_listener)
-
-    # async def _register_listener(self, _):
-    #    await self.hass.bus.async_listen(f"{DOMAIN}_switch_updated", self._handle_event)
+        self._manufacturer = entry.data.get("inverter_brand")
 
     @property
     def name(self):
@@ -43,32 +57,54 @@ class InverterSwitch(SwitchEntity):
     def is_on(self):
         return self._state
 
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._dongle_id)},
+            "name": f"Inverter {self._dongle_id}",
+            "manufacturer": f"{self._manufacturer}",
+        }
+
     async def async_turn_on(self, **kwargs):
-        self._state = True
-        await self._publish_state()
-        await self.async_update_ha_state()
-        _LOGGER.warning(f'Switch {self._unique_id} turned on')
+        """Turn the switch on."""
+        mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
+        if mqtt_handler is not None:
+            await mqtt_handler.send_update(
+                self._dongle_id, self.entity_info["unique_id"], 1, self
+            )
+        else:
+            _LOGGER.error("MQTT Handler is not initialized")
 
     async def async_turn_off(self, **kwargs):
-        self._state = False
-        await self._publish_state()
-        await self.async_update_ha_state()
-        _LOGGER.warning(f'Switch {self._unique_id} turned off')
+        """Turn the switch off."""
+        mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
+        if mqtt_handler is not None:
+            await mqtt_handler.send_update(
+                self._dongle_id, self.entity_info["unique_id"], 0, self
+            )
+        else:
+            _LOGGER.error("MQTT Handler is not initialized")
 
-    async def _publish_state(self):
-        """Publish state to MQTT broker."""
-        topic = f"{self._dongle_id}/hold"
-        payload = json.dumps({self._dongle_id: {"hold": {self._name.split('.')[1]: "on" if self._state else "off"}}})
-        await async_publish(self.hass, topic, payload, qos=1, retain=True)
+    def revert_state(self):
+        """Revert to the previous state."""
+        self._state = not self._state
+        self.async_write_ha_state()
 
     @callback
     def _handle_event(self, event):
         """Handle the event."""
-        _LOGGER.warning(f"Switch {self.entity_id} received event: {event.data}")
-        if event.data.get("entity") == self.entity_id:
-            self._state = event.data.get("value") == 'on'
-            self.async_write_ha_state()
+        _LOGGER.debug(f"Handling event for switch {self.entity_id}: {event.data}")
+        event_entity_id = event.data.get("entity").lower().replace("-", "_")
+        if event_entity_id == self.entity_id:
+            value = event.data.get("value")
+            _LOGGER.debug(f"Received event for switch {self.entity_id}: {value}")
+            if value is not None:
+                self._state = bool(value)
+                _LOGGER.debug(f"Switch {self.entity_id} state updated to {value}")
+                self.async_write_ha_state()
 
-    async def async_update(self):
-        """Update the switch state."""
-        _LOGGER.warning(f"Updating switch {self.entity_id}")
+    async def async_added_to_hass(self):
+        """Call when entity is added to hass."""
+        _LOGGER.debug(f"Switch {self.entity_id} added to hass")
+        self.hass.bus.async_listen(f"{DOMAIN}_switch_updated", self._handle_event)
+        _LOGGER.debug(f"Switch {self.entity_id} subscribed to event")

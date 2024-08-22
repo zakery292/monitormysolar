@@ -94,7 +94,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             except json.JSONDecodeError:
                 _LOGGER.error("Failed to decode JSON from response")
         else:
-            hass.async_create_task(
+            hass.loop.call_soon_threadsafe(
+                hass.async_create_task,
                 process_message(hass, msg.payload, dongle_id, inverter_brand)
             )
     client.on_connect = on_connect

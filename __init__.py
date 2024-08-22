@@ -35,6 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     client = mqtt_handler.client
 
     # Define MQTT event callbacks
+    @callback
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
             _LOGGER.info("Connected to MQTT server")
@@ -62,7 +63,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         else:
             _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)
 
-    def on_message(client, userdata, msg):
+    @callback
+    def on_message(msg):
         if msg.topic == f"{dongle_id}/firmwarecode/response":
             try:
                 data = json.loads(msg.payload)
@@ -99,7 +101,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         client.loop_start()
     else:
         # For Home Assistant MQTT, manually handle the subscription
-        await client.async_subscribe(f"{dongle_id}/#", on_message)
+        await client.async_subscribe(f"{dongle_id}/#", msg_callback=on_message)
 
     # Wait for the firmware code response if it wasn't found in the config entry
     if "firmware_code" not in config:

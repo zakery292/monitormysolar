@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry):
-    """Set up the Inverter2MQTT component from a config entry."""
+    """Set up the Monitor My Solar component from a config entry."""
     config = entry.data
     inverter_brand = config.get("inverter_brand")
     dongle_id = config.get("dongle_id")
@@ -20,7 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     mqtt_username = config.get("mqtt_username", "")
     mqtt_password = config.get("mqtt_password", "")
 
-    _LOGGER.info("Setting up Inverter2MQTT for %s", inverter_brand)
+    _LOGGER.info("Setting up Monitor My Solar for %s", inverter_brand)
 
     brand_entities = ENTITIES.get(inverter_brand, {})
     if not brand_entities:
@@ -76,18 +76,17 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 if firmware_code:
                     hass.data[DOMAIN]["firmware_code"] = firmware_code
                     _LOGGER.info(f"Firmware code received: {firmware_code}")
-                    
-                    # Update config entry in an async-safe way
-                    hass.async_create_task(
-                        hass.config_entries.async_update_entry(
-                            entry, data={**entry.data, "firmware_code": firmware_code}
-                        )
+
+                    # Update config entry and setup entities using hass.add_job to ensure it's in the event loop
+                    hass.add_job(
+                        hass.config_entries.async_update_entry,
+                        entry,
+                        data={**entry.data, "firmware_code": firmware_code}
                     )
                     
-                    hass.async_create_task(
-                        setup_entities(
-                            hass, entry, inverter_brand, dongle_id, firmware_code
-                        )
+                    hass.add_job(
+                        setup_entities,
+                        hass, entry, inverter_brand, dongle_id, firmware_code
                     )
                 else:
                     _LOGGER.error("No firmware code found in response")

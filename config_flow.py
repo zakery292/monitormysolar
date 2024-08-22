@@ -40,7 +40,7 @@ class InverterMQTTFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
             if valid:
                 return self.async_create_entry(
-                    title="Inverter MQTT Configuration",
+                    title="Monitor My Solar",
                     data=user_input,
                 )
             else:

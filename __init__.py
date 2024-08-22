@@ -136,18 +136,25 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
     """Determine the entity type based on the entity_id_suffix."""
     brand_entities = ENTITIES.get(inverter_brand, {})
     if not brand_entities:
+        _LOGGER.warning(f"No entities defined for inverter brand: {inverter_brand}. Defaulting to 'sensor'.")
         return "sensor"
+
+    entity_id_suffix_lower = entity_id_suffix.lower()
 
     for entity_type in ["sensor", "switch", "number", "time", "time_hhmm"]:
         if entity_type in brand_entities:
             for bank_name, entities in brand_entities[entity_type].items():
                 for entity in entities:
-                    if entity["unique_id"] == entity_id_suffix:
+                    if entity["unique_id"].lower() == entity_id_suffix_lower:
                         if entity_type == "time_hhmm":
+                            _LOGGER.debug(f"Matched entity_id_suffix '{entity_id_suffix_lower}' to entity type 'time'.")
                             return "time"
+                        _LOGGER.debug(f"Matched entity_id_suffix '{entity_id_suffix_lower}' to entity type '{entity_type}'.")
                         return entity_type
 
+    _LOGGER.warning(f"Could not match entity_id_suffix '{entity_id_suffix_lower}'. Defaulting to 'sensor'.")
     return "sensor"  # Default to sensor if no match is found
+
 
 async def process_message(hass, payload, dongle_id, inverter_brand):
     """Process incoming MQTT message and update entity states."""

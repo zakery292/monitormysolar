@@ -44,7 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 for bank_name in banks.keys():
                     topic = f"{dongle_id}/{bank_name}"
                     client.subscribe(topic)
-                    _LOGGER.info("Subscribed to topic: %s", topic)
+                    _LOGGER.warning("Subscribed to topic: %s", topic)
             client.subscribe(f"{dongle_id}/firmwarecode/response")
             _LOGGER.info("Subscribed to firmwarecode/response topic")
             client.subscribe(f"({dongle_id}/update)")
@@ -62,7 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     hass.loop,
                 )
             else:
-                _LOGGER.info("Requesting firmware code...")
+                _LOGGER.warning("Requesting firmware code...")
                 client.publish(f"{dongle_id}/firmwarecode/request", "")
         else:
             _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)

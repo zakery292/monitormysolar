@@ -99,5 +99,5 @@ class InverterMQTTFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             return False
 
     async def async_setup_entry(self, hass, entry):
-        _LOGGER.info("Inverter2MQTT is being setup")
+        _LOGGER.info("Monitor My Solar Being Setup")
         return True

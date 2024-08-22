@@ -74,25 +74,18 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     _LOGGER.info(f"Firmware code received: {firmware_code}")
 
                     # Schedule the config entry update directly in the event loop
-                    hass.async_create_task(
-                        hass.config_entries.async_update_entry(
-                            entry, data={**entry.data, "firmware_code": firmware_code}
-                        )
+                    await hass.config_entries.async_update_entry(
+                        entry, data={**entry.data, "firmware_code": firmware_code}
                     )
 
                     # Setup entities also scheduled directly in the event loop
-                    hass.async_create_task(
-                        setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
-                    )
+                    await setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
                 else:
                     _LOGGER.error("No firmware code found in response")
             except json.JSONDecodeError:
                 _LOGGER.error("Failed to decode JSON from response")
         else:
-            hass.loop.call_soon_threadsafe(
-                hass.async_create_task,
-                process_message(hass, msg.payload, dongle_id, inverter_brand)
-            )
+            await process_message(hass, msg.payload, dongle_id, inverter_brand)
 
     if use_ha_mqtt:
         await client.async_subscribe(hass, topic=f"{dongle_id}/#", msg_callback=on_message)

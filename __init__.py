@@ -140,12 +140,15 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
         return "sensor"
 
     entity_id_suffix_lower = entity_id_suffix.lower()
+    _LOGGER.debug(f"Looking for entity_id_suffix '{entity_id_suffix_lower}' in brand '{inverter_brand}'.")
 
     for entity_type in ["sensor", "switch", "number", "time", "time_hhmm"]:
         if entity_type in brand_entities:
             for bank_name, entities in brand_entities[entity_type].items():
                 for entity in entities:
-                    if entity["unique_id"].lower() == entity_id_suffix_lower:
+                    unique_id_lower = entity["unique_id"].lower()
+                    _LOGGER.debug(f"Comparing with unique_id '{unique_id_lower}' for entity_type '{entity_type}'.")
+                    if unique_id_lower == entity_id_suffix_lower:
                         if entity_type == "time_hhmm":
                             _LOGGER.debug(f"Matched entity_id_suffix '{entity_id_suffix_lower}' to entity type 'time'.")
                             return "time"
@@ -153,7 +156,8 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
                         return entity_type
 
     _LOGGER.warning(f"Could not match entity_id_suffix '{entity_id_suffix_lower}'. Defaulting to 'sensor'.")
-    return "sensor"  # Default to sensor if no match is found
+    return "sensor"
+
 
 
 async def process_message(hass, payload, dongle_id, inverter_brand):

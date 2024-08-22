@@ -44,7 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     client.subscribe(topic)
                     _LOGGER.warning("Subscribed to topic: %s", topic)
             client.subscribe(f"{dongle_id}/firmwarecode/response")
-            _LOGGER.warning("Subscribed to Fimwarecode topic: %s", f"{dongle_id}/firmwarecode/response")
+            _LOGGER.warning("Subscribed to Firmware code topic: %s", f"{dongle_id}/firmwarecode/response")
             client.subscribe(f"{dongle_id}/update")
             client.subscribe(f"{dongle_id}/response")
             _LOGGER.info("Subscribed to firmwarecode, update, and response topics")

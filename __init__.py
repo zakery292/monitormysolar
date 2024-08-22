@@ -1,14 +1,12 @@
 import asyncio
 import json
 import logging
-import paho.mqtt.client as mqtt_client
 from homeassistant.core import HomeAssistant
 from homeassistant.const import Platform
 from .const import DOMAIN, ENTITIES, DEFAULT_MQTT_SERVER, DEFAULT_MQTT_PORT
 from .mqtt import MQTTHandler
 
 _LOGGER = logging.getLogger(__name__)
-
 
 async def async_setup_entry(hass: HomeAssistant, entry):
     """Set up the Monitor My Solar component from a config entry."""
@@ -36,7 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     hass.data[DOMAIN] = {"mqtt_handler": mqtt_handler}
     client = mqtt_handler.client
 
-    # Subscribe to topics and request firmware code if needed
+    # Define MQTT event callbacks
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
             _LOGGER.info("Connected to MQTT server")
@@ -47,20 +45,16 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     _LOGGER.warning("Subscribed to topic: %s", topic)
             client.subscribe(f"{dongle_id}/firmwarecode/response")
             _LOGGER.warning("Subscribed to Fimwarecode topic: %s", f"{dongle_id}/firmwarecode/response")
-            _LOGGER.info("Subscribed to firmwarecode/response topic")
-            client.subscribe(f"({dongle_id}/update)")
-            _LOGGER.info("Subscribed to update topic")
-            client.subscribe(f"({dongle_id}/response)")
-            _LOGGER.info("Subscribed to response topic")
+            client.subscribe(f"{dongle_id}/update")
+            client.subscribe(f"{dongle_id}/response")
+            _LOGGER.info("Subscribed to firmwarecode, update, and response topics")
+
             firmware_code = config.get("firmware_code")
             if firmware_code:
                 hass.data[DOMAIN]["firmware_code"] = firmware_code
                 _LOGGER.info(f"Firmware code found in config entry: {firmware_code}")
-                asyncio.run_coroutine_threadsafe(
-                    setup_entities(
-                        hass, entry, inverter_brand, dongle_id, firmware_code
-                    ),
-                    hass.loop,
+                hass.async_create_task(
+                    setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
                 )
             else:
                 _LOGGER.warning("Requesting firmware code...")
@@ -86,9 +80,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
 
                     # Setup entities also scheduled directly in the event loop
                     hass.async_create_task(
-                        setup_entities(
-                            hass, entry, inverter_brand, dongle_id, firmware_code
-                        )
+                        setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
                     )
                 else:
                     _LOGGER.error("No firmware code found in response")
@@ -99,11 +91,19 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 hass.async_create_task,
                 process_message(hass, msg.payload, dongle_id, inverter_brand)
             )
-    client.on_connect = on_connect
-    client.on_message = on_message
-    client.loop_start()
 
-    # Wait for the firmware code response if it wasn't found in config entry
+    # Attach MQTT callbacks and start loop if using Paho MQTT
+    if not use_ha_mqtt:
+        client.on_connect = on_connect
+        client.on_message = on_message
+        client.loop_start()
+    else:
+        # For Home Assistant MQTT, manually handle the subscription
+        await hass.async_create_task(
+            client.async_subscribe(f"{dongle_id}/#", on_message)
+        )
+
+    # Wait for the firmware code response if it wasn't found in the config entry
     if "firmware_code" not in config:
         await asyncio.sleep(10)
         if "firmware_code" not in hass.data[DOMAIN]:
@@ -111,7 +111,6 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             return False
 
     return True
-
 
 async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
     """Set up the entities based on the firmware code."""
@@ -131,7 +130,6 @@ async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
         hass.config_entries.async_forward_entry_setup(entry, Platform.SELECT)
     )
 
-
 def determine_entity_type(entity_id_suffix, inverter_brand):
     """Determine the entity type based on the entity_id_suffix."""
     brand_entities = ENTITIES.get(inverter_brand, {})
@@ -148,7 +146,6 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
                         return entity_type
 
     return "sensor"  # Default to sensor if no match is found
-
 
 async def process_message(hass, payload, dongle_id, inverter_brand):
     """Process incoming MQTT message and update entity states."""

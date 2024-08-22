@@ -2,10 +2,11 @@ import logging
 import asyncio
 import json
 from homeassistant.core import HomeAssistant
+from homeassistant.components import mqtt
+
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-
 
 class MQTTHandler:
     def __init__(self, hass: HomeAssistant, use_ha_mqtt: bool):
@@ -15,7 +16,8 @@ class MQTTHandler:
 
     async def async_setup(self, entry):
         if self.use_ha_mqtt:
-            self.client = self.hass.components.mqtt
+            # Use Home Assistant's MQTT component directly
+            self.client = mqtt
         else:
             import paho.mqtt.client as mqtt_client
 
@@ -53,7 +55,7 @@ class MQTTHandler:
         _LOGGER.warning(f"Sending MQTT update: {topic} - {payload}")
 
         if self.use_ha_mqtt:
-            await self.client.async_publish(topic, payload)
+            await self.client.async_publish(self.hass, topic, payload)
         else:
             self.client.publish(topic, payload)
 

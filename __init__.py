@@ -35,7 +35,6 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     client = mqtt_handler.client
 
     # Define MQTT event callbacks
-    @callback
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
             _LOGGER.info("Connected to MQTT server")
@@ -63,8 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         else:
             _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)
 
-    @callback
-    def on_message(msg):
+    async def on_message(msg):
         if msg.topic == f"{dongle_id}/firmwarecode/response":
             try:
                 data = json.loads(msg.payload)

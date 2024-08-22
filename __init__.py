@@ -157,13 +157,19 @@ async def process_message(hass, payload, dongle_id, inverter_brand):
         _LOGGER.error("Invalid JSON payload received")
         return
 
+    # Replace colons in dongle_id with underscores to match Home Assistant entity ID format
+    formatted_dongle_id = dongle_id.replace(":", "_").lower()
+
     for entity_id_suffix, state in data.items():
-        entity_type = determine_entity_type(entity_id_suffix, inverter_brand)
+        # Format entity_id_suffix by replacing colons with underscores
+        formatted_entity_id_suffix = entity_id_suffix.lower().replace("-", "_").replace(":", "_")
+        entity_type = determine_entity_type(formatted_entity_id_suffix, inverter_brand)
         entity_id = (
-            f"{entity_type}.{dongle_id}_{entity_id_suffix.lower().replace('-', '_')}"
+            f"{entity_type}.{formatted_dongle_id}_{formatted_entity_id_suffix}"
         )
         _LOGGER.debug(f"Firing event for entity {entity_id} with state {state}")
         hass.bus.async_fire(
             f"{DOMAIN}_{entity_type}_updated", {"entity": entity_id, "value": state}
         )
         _LOGGER.debug(f"Event fired for entity {entity_id} with state {state}")
+

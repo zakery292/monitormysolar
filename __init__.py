@@ -77,11 +77,10 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     hass.data[DOMAIN]["firmware_code"] = firmware_code
                     _LOGGER.info(f"Firmware code received: {firmware_code}")
 
-                    # Update config entry and setup entities using hass.add_job to ensure it's in the event loop
+                    # Correctly schedule the update entry
                     hass.add_job(
                         hass.config_entries.async_update_entry,
-                        entry,
-                        data={**entry.data, "firmware_code": firmware_code}
+                        entry, {**entry.data, "firmware_code": firmware_code}
                     )
                     
                     hass.add_job(

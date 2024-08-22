@@ -62,7 +62,6 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         else:
             _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)
 
-    # Define MQTT event callbacks
     @callback
     async def on_message(msg):
         if msg.topic == f"{dongle_id}/firmwarecode/response":
@@ -73,8 +72,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     hass.data[DOMAIN]["firmware_code"] = firmware_code
                     _LOGGER.info(f"Firmware code received: {firmware_code}")
 
-                    # Schedule the config entry update directly in the event loop
-                    await hass.config_entries.async_update_entry(
+                    # Update the config entry without awaiting, since it's not a coroutine
+                    hass.config_entries.async_update_entry(
                         entry, data={**entry.data, "firmware_code": firmware_code}
                     )
 

@@ -101,7 +101,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         client.loop_start()
     else:
         # For Home Assistant MQTT, manually handle the subscription
-        await client.async_subscribe(topic=f"{dongle_id}/#", msg_callback=on_message)
+        await client.async_subscribe(hass, topic=f"{dongle_id}/#", msg_callback=on_message)
 
 
 

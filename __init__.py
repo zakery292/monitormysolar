@@ -33,7 +33,6 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     await mqtt_handler.async_setup(entry)
     hass.data[DOMAIN] = {"mqtt_handler": mqtt_handler}
     client = mqtt_handler.client
-
     # Define MQTT event callbacks
     @callback
     def on_connect(client, userdata, flags, rc):
@@ -63,6 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         else:
             _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)
 
+    # Define MQTT event callbacks
     @callback
     async def on_message(msg):
         if msg.topic == f"{dongle_id}/firmwarecode/response":
@@ -94,18 +94,25 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 process_message(hass, msg.payload, dongle_id, inverter_brand)
             )
 
-    # Attach MQTT callbacks and start loop if using Paho MQTT
-    if not use_ha_mqtt:
+    if use_ha_mqtt:
+        # For Home Assistant MQTT, subscribe to necessary topics
+        await client.async_subscribe(f"{dongle_id}/firmwarecode/response", on_message)
+        await client.async_subscribe(f"{dongle_id}/update", on_message)
+        await client.async_subscribe(f"{dongle_id}/response", on_message)
+        
+        # Now that we're subscribed, publish the firmware request
+        firmware_code = config.get("firmware_code")
+        if firmware_code:
+            hass.data[DOMAIN]["firmware_code"] = firmware_code
+            _LOGGER.info(f"Firmware code found in config entry: {firmware_code}")
+            await setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
+        else:
+            _LOGGER.warning("Requesting firmware code...")
+            client.publish(f"{dongle_id}/firmwarecode/request", "")
+    else:
         client.on_connect = on_connect
         client.on_message = on_message
         client.loop_start()
-    else:
-        # For Home Assistant MQTT, manually handle the subscription
-        await client.async_subscribe(hass, topic=f"{dongle_id}/#", msg_callback=on_message)
-
-
-
-
 
     # Wait for the firmware code response if it wasn't found in the config entry
     if "firmware_code" not in config:

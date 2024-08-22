@@ -107,7 +107,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             await setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
         else:
             _LOGGER.warning("Requesting firmware code...")
-            client.publish(hass=hass, topic=f"{dongle_id}/firmwarecode/request", payload="")
+            client.publish(hass, topic=f"{dongle_id}/firmwarecode/request", payload="")
     else:
         client.on_connect = on_connect
         client.on_message = on_message

@@ -117,7 +117,7 @@ FIRMWARE_CODES = {
 }
 
 # Default MQTT configuration for Home Assistant broker
-DEFAULT_MQTT_SERVER = "mqtt://core-mosquitto"
+DEFAULT_MQTT_SERVER = "core-mosquitto"
 DEFAULT_MQTT_PORT = 1883
 DEFAULT_MQTT_USERNAME = ""
 DEFAULT_MQTT_PASSWORD = ""

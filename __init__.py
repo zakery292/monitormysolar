@@ -77,12 +77,18 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     hass.data[DOMAIN]["firmware_code"] = firmware_code
                     _LOGGER.info(f"Firmware code received: {firmware_code}")
 
-                    # Correctly schedule the update entry
-                    hass.add_job(hass.config_entries.async_update_entry, entry, {**entry.data, "firmware_code": firmware_code})
-                    
-                    hass.add_job(
-                        setup_entities,
-                        hass, entry, inverter_brand, dongle_id, firmware_code
+                    # Schedule the config entry update directly in the event loop
+                    hass.async_create_task(
+                        hass.config_entries.async_update_entry(
+                            entry, data={**entry.data, "firmware_code": firmware_code}
+                        )
+                    )
+
+                    # Setup entities also scheduled directly in the event loop
+                    hass.async_create_task(
+                        setup_entities(
+                            hass, entry, inverter_brand, dongle_id, firmware_code
+                        )
                     )
                 else:
                     _LOGGER.error("No firmware code found in response")

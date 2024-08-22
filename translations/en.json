@@ -8,7 +8,7 @@
         },
         "step": {
             "user": {
-                "title": "Inverter2MQTT Configuration",
+                "title": "Monitor My Solar",
                 "description": "Please enter the following information to set up your inverter.",
                 "data": {
                     "inverter_brand": "Inverter Brand",
@@ -16,7 +16,7 @@
                     "mqtt_port": "MQTT Port",
                     "mqtt_username": "MQTT Username",
                     "mqtt_password": "MQTT Password",
-                    "dongle_id": "Dongle ID"
+                    "dongle_id": "Dongle ID 'dongle-35:S4:48:S7:41'"
                 }
             }
         }

@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback  # Import the callback decorator
 from homeassistant.const import Platform
 from .const import DOMAIN, ENTITIES, DEFAULT_MQTT_SERVER, DEFAULT_MQTT_PORT
 from .mqtt import MQTTHandler
@@ -35,6 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     client = mqtt_handler.client
 
     # Define MQTT event callbacks
+    @callback
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
             _LOGGER.info("Connected to MQTT server")
@@ -62,6 +63,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         else:
             _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)
 
+    @callback
     async def on_message(msg):
         if msg.topic == f"{dongle_id}/firmwarecode/response":
             try:

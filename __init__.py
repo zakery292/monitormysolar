@@ -95,10 +95,9 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             )
 
     if use_ha_mqtt:
-        # For Home Assistant MQTT, subscribe to necessary topics
-        await client.async_subscribe(f"{dongle_id}/firmwarecode/response", on_message)
-        await client.async_subscribe(f"{dongle_id}/update", on_message)
-        await client.async_subscribe(f"{dongle_id}/response", on_message)
+        await client.async_subscribe(hass, topic=f"{dongle_id}/#", msg_callback=on_message)
+
+
         
         # Now that we're subscribed, publish the firmware request
         firmware_code = config.get("firmware_code")

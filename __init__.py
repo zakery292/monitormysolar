@@ -46,6 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     client.subscribe(topic)
                     _LOGGER.warning("Subscribed to topic: %s", topic)
             client.subscribe(f"{dongle_id}/firmwarecode/response")
+            _LOGGER.warning("Subscribed to Fimwarecode topic: %s", f"{dongle_id}/firmwarecode/response")
             _LOGGER.info("Subscribed to firmwarecode/response topic")
             client.subscribe(f"({dongle_id}/update)")
             _LOGGER.info("Subscribed to update topic")
@@ -75,25 +76,27 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                 if firmware_code:
                     hass.data[DOMAIN]["firmware_code"] = firmware_code
                     _LOGGER.info(f"Firmware code received: {firmware_code}")
-                    hass.config_entries.async_update_entry(
-                        entry, data={**entry.data, "firmware_code": firmware_code}
+                    
+                    # Update config entry in an async-safe way
+                    hass.async_create_task(
+                        hass.config_entries.async_update_entry(
+                            entry, data={**entry.data, "firmware_code": firmware_code}
+                        )
                     )
-                    asyncio.run_coroutine_threadsafe(
+                    
+                    hass.async_create_task(
                         setup_entities(
                             hass, entry, inverter_brand, dongle_id, firmware_code
-                        ),
-                        hass.loop,
+                        )
                     )
                 else:
                     _LOGGER.error("No firmware code found in response")
             except json.JSONDecodeError:
                 _LOGGER.error("Failed to decode JSON from response")
         else:
-            asyncio.run_coroutine_threadsafe(
-                process_message(hass, msg.payload, dongle_id, inverter_brand),
-                hass.loop,
+            hass.async_create_task(
+                process_message(hass, msg.payload, dongle_id, inverter_brand)
             )
-
     client.on_connect = on_connect
     client.on_message = on_message
     client.loop_start()

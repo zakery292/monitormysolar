@@ -20,7 +20,7 @@ from homeassistant.components.sensor import (
 Logger: Logger = getLogger(__package__)
 
 # Domain for the integration
-DOMAIN = "monitorMySolar"
+DOMAIN = "monitorMySolargit"
 
 
 FIRMWARE_CODES = {

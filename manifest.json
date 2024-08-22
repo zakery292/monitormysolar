@@ -11,7 +11,7 @@
     "iot_class": "local_polling",
     "requirements": ["MQTT", "paho-mqtt"],
     "config_flow": true,
-    "version": "1.0.3",
+    "version": "1.0.4",
     "is_built_in": false
 
   }

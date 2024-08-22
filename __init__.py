@@ -99,9 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         client.loop_start()
     else:
         # For Home Assistant MQTT, manually handle the subscription
-        await hass.async_create_task(
-            client.async_subscribe(f"{dongle_id}/#", on_message)
-        )
+        await client.async_subscribe(f"{dongle_id}/#", on_message)
 
     # Wait for the firmware code response if it wasn't found in the config entry
     if "firmware_code" not in config:

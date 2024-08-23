@@ -1,7 +1,6 @@
 {
     "domain": "monitormysolar",
     "name": "MonitorMySolar",
-    "icon": "mdi:battery",
     "integration_type": "device",
     "codeowners": ["@zakery292"],
     "dependencies": ["mqtt"],

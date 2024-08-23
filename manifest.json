@@ -11,5 +11,6 @@
     "requirements": ["MQTT", "paho-mqtt"],
     "config_flow": true,
     "version": "1.0.4",
+    
 
   }

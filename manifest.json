@@ -1,5 +1,5 @@
 {
-    "domain": "monitorMySolar",
+    "domain": "monitormysolar",
     "name": "MonitorMySolar",
     "icon": "mdi:battery",
     "integration_type": "device",

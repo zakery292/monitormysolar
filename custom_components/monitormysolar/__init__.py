@@ -107,7 +107,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
 
     # Wait for the firmware code response if it wasn't found in the config entry
     if "firmware_code" not in config:
-        await asyncio.sleep(10)
+        await asyncio.sleep(15)
         if "firmware_code" not in hass.data[DOMAIN]:
             _LOGGER.error("Firmware code response not received within timeout")
             return False

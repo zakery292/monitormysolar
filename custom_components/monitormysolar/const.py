@@ -128,6 +128,7 @@ ENTITIES = {
         "Lux": {
             "sensors": {
                 "inputbank1": [
+                    {"name:": "Dongle Version", "type": "sensor", "unique_id": "dongle_version"},
                     {"name": "State", "type": "sensor", "unique_id": "state"},
                     {"name": "Voltage PV1", "type": "sensor", "unique_id": "vpv1", "unit_of_measurement": "V", "device_class": "voltage"},
                     {"name": "Voltage PV2", "type": "sensor", "unique_id": "vpv2", "unit_of_measurement": "V", "state_class": "measurement", "device_class": "voltage"},
@@ -323,8 +324,8 @@ ENTITIES = {
                     {"name": "AC Charge End1", "type": "time", "unique_id": "ACChgEnd1"},
                     {"name": "AC Charge Start2", "type": "time", "unique_id": "ACChgStart2"},
                     {"name": "AC Charge End2", "type": "time", "unique_id": "ACChgEnd2"},
-                    {"name": "Charge Priority Start", "type": "time", "unique_id": "ChgFirstEnd"},
-                    {"name": "Charge Priority End", "type": "time", "unique_id": "ChgFirstStart"},
+                    {"name": "Charge Priority Start", "type": "time", "unique_id": "ChgFirstStart"},
+                    {"name": "Charge Priority End", "type": "time", "unique_id": "ChgFirstEnd"},
                     {"name": "Charge Priority Start1", "type": "time", "unique_id": "ChgFirstStart1"},
                     {"name": "Charge Priority End1", "type": "time", "unique_id": "ChgFirstEnd1"},
                 ],

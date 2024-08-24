@@ -1,4 +1,5 @@
 import asyncio
+import asyncio
 import json
 import logging
 from homeassistant.core import HomeAssistant, callback  # Import the callback decorator
@@ -33,6 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     await mqtt_handler.async_setup(entry)
     hass.data[DOMAIN] = {"mqtt_handler": mqtt_handler}
     client = mqtt_handler.client
+
     # Define MQTT event callbacks
     @callback
     def on_connect(client, userdata, flags, rc):
@@ -59,6 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             else:
                 _LOGGER.warning("Requesting firmware code...")
                 client.publish(f"{dongle_id}/firmwarecode/request", "")
+
         else:
             _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)
 
@@ -89,8 +92,6 @@ async def async_setup_entry(hass: HomeAssistant, entry):
     if use_ha_mqtt:
         await client.async_subscribe(hass, topic=f"{dongle_id}/#", msg_callback=on_message)
 
-
-        
         # Now that we're subscribed, publish the firmware request
         firmware_code = config.get("firmware_code")
         if firmware_code:

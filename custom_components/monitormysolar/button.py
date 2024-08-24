@@ -59,17 +59,20 @@ class FirmwareUpdateButton(ButtonEntity):
 
     async def async_press(self):
         """Handle the button press."""
-        sw_version_entity_id = f"sensor.{self._dongle_id}_sw_version"
-        latest_firmware_entity_id = f"sensor.{self._dongle_id}_latestfirmwareversion"
+        # Ensure dongle_id is formatted correctly with underscores
+        formatted_dongle_id = self._dongle_id.replace(":", "_")
+
+        sw_version_entity_id = f"sensor.{formatted_dongle_id}_sw_version"
+        latest_firmware_entity_id = f"sensor.{formatted_dongle_id}_latestfirmwareversion"
+
         _LOGGER.warning(f"Software Version Entity ID: {sw_version_entity_id}")
         _LOGGER.warning(f"Latest Firmware Version Entity ID: {latest_firmware_entity_id}")
 
         sw_version = self.hass.states.get(sw_version_entity_id)
         latest_firmware_version = self.hass.states.get(latest_firmware_entity_id)
-        _LOGGER.warning(f"Software Version: {sw_version}, Latest Firmware Version: {latest_firmware_version}")
 
         if sw_version is None or latest_firmware_version is None:
-            _LOGGER.error(f"Could not retrieve version information for {self._dongle_id}.")
+            _LOGGER.error(f"Could not retrieve version information for {formatted_dongle_id}.")
             return
 
         sw_version = sw_version.state
@@ -77,16 +80,15 @@ class FirmwareUpdateButton(ButtonEntity):
 
         if sw_version < latest_firmware_version:
             # Firmware update is needed
-            _LOGGER.info(f"Firmware update button pressed for {self._dongle_id}")
+            _LOGGER.info(f"Firmware update button pressed for {formatted_dongle_id}")
             topic = f"{self._dongle_id}/update"
             payload = "updatedongle"
             self.hass.components.mqtt.async_publish(self.hass, topic, payload)
             _LOGGER.info(f"Firmware update request sent to {topic} with payload {payload}")
         else:
             # No update needed
-            _LOGGER.info(f"No firmware update needed for {self._dongle_id}. SW_VERSION: {sw_version}, LatestFirmwareVersion: {latest_firmware_version}")
+            _LOGGER.info(f"No firmware update needed for {formatted_dongle_id}. SW_VERSION: {sw_version}, LatestFirmwareVersion: {latest_firmware_version}")
             self.hass.bus.async_fire(f"{DOMAIN}_notification", {
                 "title": "Firmware Update",
                 "message": "No update available for the dongle."
             })
-

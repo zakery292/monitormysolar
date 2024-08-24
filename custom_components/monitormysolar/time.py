@@ -7,7 +7,6 @@ from .const import DOMAIN, ENTITIES
 
 _LOGGER = logging.getLogger(__name__)
 
-
 async def async_setup_entry(hass, entry, async_add_entities):
     inverter_brand = entry.data.get("inverter_brand")
     dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
@@ -53,6 +52,7 @@ class InverterDateTime(DateTimeEntity):
         self._attr_native_value = entity_info.get("native_value")
         self._attr_icon = entity_info.get("icon", "mdi:calendar-clock")
         self._manufacturer = entry.data.get("inverter_brand")
+        self._skip_mqtt = False  # Flag to prevent MQTT loops
 
     @property
     def name(self):
@@ -84,6 +84,11 @@ class InverterDateTime(DateTimeEntity):
 
     async def async_set_value(self, value: datetime):
         """Update the current date and time."""
+        if self._skip_mqtt:
+            _LOGGER.debug(f"Skipping MQTT update for {self.entity_id}")
+            self._skip_mqtt = False
+            return
+
         _LOGGER.debug(f"Setting date and time for {self.entity_id} to {value}")
         await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
             self._dongle_id.replace("_", "-"),
@@ -106,6 +111,7 @@ class InverterDateTime(DateTimeEntity):
             _LOGGER.debug(f"Received event for datetime {self.entity_id}: {value}")
             if value is not None:
                 self._attr_native_value = datetime.fromisoformat(value)
+                self._skip_mqtt = True  # Set flag to skip MQTT update
                 _LOGGER.debug(f"DateTime {self.entity_id} state updated to {value}")
                 self.async_write_ha_state()
 
@@ -116,7 +122,7 @@ class InverterDateTime(DateTimeEntity):
         _LOGGER.debug(f"DateTime {self.entity_id} subscribed to event")
 
 
-class InverterTime(DateTimeEntity):
+class InverterTime(TimeEntity):
     def __init__(self, entity_info, hass, entry, dongle_id):
         """Initialize the Time entity."""
         _LOGGER.debug(f"Initializing Time entity with info: {entity_info}")
@@ -130,6 +136,7 @@ class InverterTime(DateTimeEntity):
         self.entity_id = f"time.{self._device_id}_{self._entity_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
+        self._skip_mqtt = False  # Flag to prevent MQTT loops
 
     @property
     def name(self):
@@ -153,6 +160,11 @@ class InverterTime(DateTimeEntity):
 
     async def async_set_value(self, value):
         """Set the time value."""
+        if self._skip_mqtt:
+            _LOGGER.debug(f"Skipping MQTT update for {self.entity_id}")
+            self._skip_mqtt = False
+            return
+
         _LOGGER.debug(f"Setting time value for {self.entity_id} to {value}")
         await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
             self._dongle_id.replace("_", "-"),
@@ -175,6 +187,7 @@ class InverterTime(DateTimeEntity):
             _LOGGER.debug(f"Received event for time {self.entity_id}: {value}")
             if value is not None:
                 self._state = value
+                self._skip_mqtt = True  # Set flag to skip MQTT update
                 _LOGGER.debug(f"Time {self.entity_id} state updated to {value}")
                 self.async_write_ha_state()
 

@@ -129,7 +129,7 @@ ENTITIES = {
             "sensors": {
                 "inputbank1": [
                     {"name:": "Dongle Version", "type": "sensor", "unique_id": "SW_VERSION", "state_class": "text"},
-                    {"name:": "Latest Dongle Version", "type": "sensor", "unique_id": "SW_VERSION", "state_class": "text"},
+                    {"name:": "Latest Dongle Version", "type": "sensor", "unique_id": "latestFirmwareVersion", "state_class": "text"},
 
                     {"name": "State", "type": "sensor", "unique_id": "state"},
                     {"name": "Voltage PV1", "type": "sensor", "unique_id": "vpv1", "unit_of_measurement": "V", "device_class": "voltage"},

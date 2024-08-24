@@ -1,5 +1,6 @@
 import logging
 from homeassistant.components.button import ButtonEntity
+from homeassistant.components.mqtt import async_publish
 from homeassistant.core import callback
 from .const import DOMAIN, ENTITIES, FIRMWARE_CODES
 
@@ -14,22 +15,23 @@ async def async_setup_entry(hass, entry, async_add_entities):
     brand_entities = ENTITIES.get(inverter_brand, {})
     buttons_config = brand_entities.get("button", {})
 
+    mqtt_handler = hass.data[DOMAIN]["mqtt_handler"]
+
     entities = []
     for bank_name, buttons in buttons_config.items():
         for button in buttons:
             try:
                 entities.append(
-                    FirmwareUpdateButton(button, hass, entry, dongle_id, bank_name)
+                    FirmwareUpdateButton(button, hass, entry, dongle_id, bank_name, mqtt_handler)
                 )
             except Exception as e:
                 _LOGGER.error(f"Error setting up button {button}: {e}")
 
     async_add_entities(entities, True)
 class FirmwareUpdateButton(ButtonEntity):
-    def __init__(self, button_info, hass, entry, dongle_id, bank_name):
+    def __init__(self, button_info, hass, entry, dongle_id, bank_name, mqtt_handler):
         """Initialize the button."""
-        _LOGGER.debug(f"Initializing button with info: {button_info}, "
-                      f"hass: {hass}, entry: {entry}, dongle_id: {dongle_id}, bank_name: {bank_name}")
+        _LOGGER.debug(f"Initializing button with info: {button_info}")
         self.button_info = button_info
         self._name = button_info["name"]
         self._unique_id = f"{entry.entry_id}_{button_info['unique_id']}".lower()
@@ -40,6 +42,7 @@ class FirmwareUpdateButton(ButtonEntity):
         self.entity_id = f"button.{self._device_id}_{self._button_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
+        self._mqtt_handler = mqtt_handler
 
     @property
     def name(self):
@@ -59,14 +62,10 @@ class FirmwareUpdateButton(ButtonEntity):
 
     async def async_press(self):
         """Handle the button press."""
-        # Ensure dongle_id is formatted correctly with underscores
         formatted_dongle_id = self._dongle_id.replace(":", "_")
 
         sw_version_entity_id = f"sensor.{formatted_dongle_id}_sw_version"
         latest_firmware_entity_id = f"sensor.{formatted_dongle_id}_latestfirmwareversion"
-
-        _LOGGER.warning(f"Software Version Entity ID: {sw_version_entity_id}")
-        _LOGGER.warning(f"Latest Firmware Version Entity ID: {latest_firmware_entity_id}")
 
         sw_version = self.hass.states.get(sw_version_entity_id)
         latest_firmware_version = self.hass.states.get(latest_firmware_entity_id)
@@ -81,10 +80,7 @@ class FirmwareUpdateButton(ButtonEntity):
         if sw_version < latest_firmware_version:
             # Firmware update is needed
             _LOGGER.info(f"Firmware update button pressed for {formatted_dongle_id}")
-            topic = f"{self._dongle_id}/update"
-            payload = "updatedongle"
-            self.hass.components.mqtt.async_publish(self.hass, topic, payload)
-            _LOGGER.info(f"Firmware update request sent to {topic} with payload {payload}")
+            await self._mqtt_handler.send_update(self._dongle_id, "firmware_update", "updatedongle", self)
         else:
             # No update needed
             _LOGGER.info(f"No firmware update needed for {formatted_dongle_id}. SW_VERSION: {sw_version}, LatestFirmwareVersion: {latest_firmware_version}")

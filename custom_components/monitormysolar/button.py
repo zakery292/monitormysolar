@@ -61,9 +61,12 @@ class FirmwareUpdateButton(ButtonEntity):
         """Handle the button press."""
         sw_version_entity_id = f"sensor.{self._dongle_id}_sw_version"
         latest_firmware_entity_id = f"sensor.{self._dongle_id}_latestfirmwareversion"
+        _LOGGER.warning(f"Software Version Entity ID: {sw_version_entity_id}")
+        _LOGGER.warning(f"Latest Firmware Version Entity ID: {latest_firmware_entity_id}")
 
         sw_version = self.hass.states.get(sw_version_entity_id)
         latest_firmware_version = self.hass.states.get(latest_firmware_entity_id)
+        _LOGGER.warning(f"Software Version: {sw_version}, Latest Firmware Version: {latest_firmware_version}")
 
         if sw_version is None or latest_firmware_version is None:
             _LOGGER.error(f"Could not retrieve version information for {self._dongle_id}.")

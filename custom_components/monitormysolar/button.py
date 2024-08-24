@@ -10,8 +10,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
     firmware_code = entry.data.get("firmware_code")
     device_type = FIRMWARE_CODES.get(firmware_code, {}).get("Device_Type", "")
-    sw_version = entry.data.get("sw_version")
-    latest_firmware_version = entry.data.get("latest_firmware_version")
 
     brand_entities = ENTITIES.get(inverter_brand, {})
     buttons_config = brand_entities.get("button", {})
@@ -21,7 +19,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         for button in buttons:
             try:
                 entities.append(
-                    FirmwareUpdateButton(button, hass, entry, dongle_id, bank_name, sw_version, latest_firmware_version)
+                    FirmwareUpdateButton(button, hass, entry, dongle_id, bank_name)
                 )
             except Exception as e:
                 _LOGGER.error(f"Error setting up button {button}: {e}")

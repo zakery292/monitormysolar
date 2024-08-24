@@ -81,7 +81,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             await process_message(hass, msg.payload, dongle_id, inverter_brand)
 
     if use_ha_mqtt:
-        await mqtt.async_subscribe(hass, topic=f"{dongle_id}/#", msg_callback=on_message)
+        await mqtt.async_subscribe(f"{dongle_id}/#", on_message)
 
         firmware_code = config.get("firmware_code")
         if firmware_code:
@@ -90,7 +90,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             await setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
         else:
             _LOGGER.warning("Requesting firmware code...")
-            await mqtt.async_publish(hass, topic=f"{dongle_id}/firmwarecode/request", payload="")
+            await mqtt.async_publish(f"{dongle_id}/firmwarecode/request", "")
+
     else:
         client.on_connect = on_connect
         client.on_message = on_message
@@ -103,6 +104,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             return False
 
     return True
+
 async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
     """Set up the entities based on the firmware code."""
     platforms = [
@@ -143,8 +145,6 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
     _LOGGER.warning(f"Could not match entity_id_suffix '{entity_id_suffix_lower}'. Defaulting to 'sensor'.")
     return "sensor"
 
-
-
 async def process_message(hass, payload, dongle_id, inverter_brand):
     """Process incoming MQTT message and update entity states."""
     try:
@@ -153,19 +153,12 @@ async def process_message(hass, payload, dongle_id, inverter_brand):
         _LOGGER.error("Invalid JSON payload received")
         return
 
-    # Replace colons in dongle_id with underscores to match Home Assistant entity ID format
     formatted_dongle_id = dongle_id.replace(":", "_").lower()
 
     for entity_id_suffix, state in data.items():
-        # Format entity_id_suffix by replacing colons with underscores
         formatted_entity_id_suffix = entity_id_suffix.lower().replace("-", "_").replace(":", "_")
         entity_type = determine_entity_type(formatted_entity_id_suffix, inverter_brand)
-        entity_id = (
-            f"{entity_type}.{formatted_dongle_id}_{formatted_entity_id_suffix}"
-        )
+        entity_id = f"{entity_type}.{formatted_dongle_id}_{formatted_entity_id_suffix}"
         _LOGGER.debug(f"Firing event for entity {entity_id} with state {state}")
-        hass.bus.async_fire(
-            f"{DOMAIN}_{entity_type}_updated", {"entity": entity_id, "value": state}
-        )
+        hass.bus.async_fire(f"{DOMAIN}_{entity_type}_updated", {"entity": entity_id, "value": state})
         _LOGGER.debug(f"Event fired for entity {entity_id} with state {state}")
-

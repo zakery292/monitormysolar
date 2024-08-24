@@ -13,7 +13,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     device_type = FIRMWARE_CODES.get(firmware_code, {}).get("Device_Type", "")
 
     brand_entities = ENTITIES.get(inverter_brand, {})
-    sensors_config = brand_entities.get("sensors", {})
+    sensors_config = brand_entities.get("sensor", {})
 
     entities = []
     for bank_name, sensors in sensors_config.items():

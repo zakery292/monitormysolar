@@ -126,7 +126,7 @@ DEFAULT_MQTT_PASSWORD = ""
 
 ENTITIES = {
         "Lux": {
-            "sensors": {
+            "sensor": {
                 "inputbank1": [
                     {"name": "Dongle Version", "type": "sensor", "unique_id": "SW_VERSION", "state_class": "text"},
                     {"name": "Latest Dongle Version", "type": "sensor", "unique_id": "latestFirmwareVersion", "state_class": "text"},

@@ -145,7 +145,7 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
     entity_id_suffix_lower = entity_id_suffix.lower()
     _LOGGER.debug(f"Looking for entity_id_suffix '{entity_id_suffix_lower}' in brand '{inverter_brand}'.")
 
-    for entity_type in ["sensor", "switch", "number", "time", "time_hhmm", "button"]:
+    for entity_type in ["sensors", "switch", "number", "time", "time_hhmm", "button", "select"]:
         if entity_type in brand_entities:
             for bank_name, entities in brand_entities[entity_type].items():
                 _LOGGER.debug(f"Checking in bank '{bank_name}' for entity_type '{entity_type}'.")
@@ -160,10 +160,6 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
                         return entity_type
 
     _LOGGER.warning(f"Could not match entity_id_suffix '{entity_id_suffix_lower}'. Defaulting to 'sensor'.")
-    return "sensor"
-
-
-    _LOGGER.debug(f"Could not match entity_id_suffix '{entity_id_suffix_lower}'. Defaulting to 'sensor'.")
     return "sensor"
 
 

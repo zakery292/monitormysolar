@@ -14,7 +14,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     latest_firmware_version = entry.data.get("latest_firmware_version")
 
     brand_entities = ENTITIES.get(inverter_brand, {})
-    buttons_config = brand_entities.get("buttons", {})
+    buttons_config = brand_entities.get("button", {})
 
     entities = []
     for bank_name, buttons in buttons_config.items():

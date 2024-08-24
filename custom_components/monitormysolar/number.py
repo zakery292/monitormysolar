@@ -43,9 +43,7 @@ class InverterNumber(NumberEntity):
         self._min_value = entity_info.get("min", None)
         self._max_value = entity_info.get("max", None)
         self._mode = entity_info.get("mode", "auto")
-        self._native_unit_of_measurement = entity_info.get(
-            "native_unit_of_measurement", None
-        )
+        self._native_unit_of_measurement = entity_info.get("native_unit_of_measurement", None)
         self._device_class = entity_info.get("device_class", None)
         self._manufacturer = entry.data.get("inverter_brand")
 
@@ -58,7 +56,7 @@ class InverterNumber(NumberEntity):
         return self._unique_id
 
     @property
-    def value(self):
+    def native_value(self):
         return self._value
 
     @property
@@ -79,7 +77,7 @@ class InverterNumber(NumberEntity):
 
     @property
     def device_class(self):
-        return self.entity_info.get("device_class", None)
+        return self._device_class
 
     @property
     def device_info(self):

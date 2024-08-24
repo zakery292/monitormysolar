@@ -3,7 +3,7 @@ import json
 import logging
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.const import Platform
-from homeassistant.components import mqtt
+from homeassistant.components import mqtt  # Correct import from HA
 from .const import DOMAIN, ENTITIES, DEFAULT_MQTT_SERVER, DEFAULT_MQTT_PORT
 from .mqtt import MQTTHandler
 
@@ -81,7 +81,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             await process_message(hass, msg.payload, dongle_id, inverter_brand)
 
     if use_ha_mqtt:
-        await mqtt.async_subscribe(f"{dongle_id}/#", on_message)
+        await mqtt.async_subscribe(hass, f"{dongle_id}/#", on_message)
 
         firmware_code = config.get("firmware_code")
         if firmware_code:
@@ -90,7 +90,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             await setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
         else:
             _LOGGER.warning("Requesting firmware code...")
-            await mqtt.async_publish(f"{dongle_id}/firmwarecode/request", "")
+            await mqtt.async_publish(hass, f"{dongle_id}/firmwarecode/request", "")
 
     else:
         client.on_connect = on_connect

@@ -131,6 +131,9 @@ async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setup(entry, Platform.SELECT)
     )
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, Platform.BUTTON)
+    )
 
 def determine_entity_type(entity_id_suffix, inverter_brand):
     """Determine the entity type based on the entity_id_suffix."""
@@ -142,7 +145,7 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
     entity_id_suffix_lower = entity_id_suffix.lower()
     _LOGGER.debug(f"Looking for entity_id_suffix '{entity_id_suffix_lower}' in brand '{inverter_brand}'.")
 
-    for entity_type in ["sensor", "switch", "number", "time", "time_hhmm"]:
+    for entity_type in ["sensor", "switch", "number", "time", "time_hhmm", "button"]:
         if entity_type in brand_entities:
             for bank_name, entities in brand_entities[entity_type].items():
                 _LOGGER.debug(f"Checking in bank '{bank_name}' for entity_type '{entity_type}'.")

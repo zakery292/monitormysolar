@@ -313,6 +313,11 @@ ENTITIES = {
                     # Add more selects as needed
                 ],
             },
+            "button": {
+                "inputbank1": [
+                    {"name": "Dongle Firmware Update", "type": "button", "unique_id": "firmware_update_button"}
+                ]
+            },
 
             "time": {
                 "holdbank1": [

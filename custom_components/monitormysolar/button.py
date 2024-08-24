@@ -28,7 +28,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class FirmwareUpdateButton(ButtonEntity):
     def __init__(self, button_info, hass, entry, dongle_id, bank_name):
         """Initialize the button."""
-        _LOGGER.debug(f"Initializing button with info: {button_info}")
+        _LOGGER.debug(f"Initializing button with info: {button_info}, "
+                      f"hass: {hass}, entry: {entry}, dongle_id: {dongle_id}, bank_name: {bank_name}")
         self.button_info = button_info
         self._name = button_info["name"]
         self._unique_id = f"{entry.entry_id}_{button_info['unique_id']}".lower()

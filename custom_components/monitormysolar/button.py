@@ -19,16 +19,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entities = []
     for bank_name, buttons in buttons_config.items():
         for button in buttons:
-            if sw_version < latest_firmware_version:
-                try:
-                    entities.append(
-                        FirmwareUpdateButton(button, hass, entry, dongle_id, bank_name, sw_version, latest_firmware_version)
-                    )
-                except Exception as e:
-                    _LOGGER.error(f"Error setting up button {button}: {e}")
+            try:
+                entities.append(
+                    FirmwareUpdateButton(button, hass, entry, dongle_id, bank_name, sw_version, latest_firmware_version)
+                )
+            except Exception as e:
+                _LOGGER.error(f"Error setting up button {button}: {e}")
 
     async_add_entities(entities, True)
-
 class FirmwareUpdateButton(ButtonEntity):
     def __init__(self, button_info, hass, entry, dongle_id, bank_name, sw_version, latest_firmware_version):
         """Initialize the button."""
@@ -62,15 +60,20 @@ class FirmwareUpdateButton(ButtonEntity):
             "manufacturer": f"{self._manufacturer}",
         }
 
-    @property
-    def available(self):
-        """Return if the button is available to be pressed."""
-        return self._sw_version < self._latest_firmware_version
-
     async def async_press(self):
         """Handle the button press."""
-        _LOGGER.info(f"Firmware update button pressed for {self._dongle_id}")
-        topic = f"{self._dongle_id}/update"
-        payload = "updatedongle"
-        self.hass.components.mqtt.async_publish(self.hass, topic, payload)
-        _LOGGER.info(f"Firmware update request sent to {topic} with payload {payload}")
+        if self._sw_version < self._latest_firmware_version:
+            # Firmware update is needed
+            _LOGGER.info(f"Firmware update button pressed for {self._dongle_id}")
+            topic = f"{self._dongle_id}/update"
+            payload = "updatedongle"
+            self.hass.components.mqtt.async_publish(self.hass, topic, payload)
+            _LOGGER.info(f"Firmware update request sent to {topic} with payload {payload}")
+        else:
+            # No update needed
+            _LOGGER.info(f"No firmware update needed for {self._dongle_id}. SW_VERSION: {self._sw_version}, LatestFirmwareVersion: {self._latest_firmware_version}")
+            hass.bus.async_fire(f"{DOMAIN}_notification", {
+                "title": "Firmware Update",
+                "message": "No update available for the dongle."
+            })
+

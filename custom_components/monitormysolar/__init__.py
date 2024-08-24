@@ -116,24 +116,16 @@ async def async_setup_entry(hass: HomeAssistant, entry):
 
 async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
     """Set up the entities based on the firmware code."""
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, Platform.SENSOR)
-    )
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, Platform.SWITCH)
-    )
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, Platform.NUMBER)
-    )
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, Platform.TIME)
-    )
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, Platform.SELECT)
-    )
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, Platform.BUTTON)
-    )
+    platforms = [
+        Platform.SENSOR,
+        Platform.SWITCH,
+        Platform.NUMBER,
+        Platform.TIME,
+        Platform.SELECT,
+        Platform.BUTTON,
+    ]
+
+    await hass.config_entries.async_forward_entry_setups(entry, platforms)
 
 def determine_entity_type(entity_id_suffix, inverter_brand):
     """Determine the entity type based on the entity_id_suffix."""

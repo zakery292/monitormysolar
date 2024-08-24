@@ -28,7 +28,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     async_add_entities(entities, True)
 class FirmwareUpdateButton(ButtonEntity):
-    def __init__(self, button_info, hass, entry, dongle_id, bank_name, sw_version, latest_firmware_version):
+    def __init__(self, button_info, hass, entry, dongle_id, bank_name):
         """Initialize the button."""
         _LOGGER.debug(f"Initializing button with info: {button_info}")
         self.button_info = button_info
@@ -41,8 +41,6 @@ class FirmwareUpdateButton(ButtonEntity):
         self.entity_id = f"button.{self._device_id}_{self._button_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
-        self._sw_version = sw_version
-        self._latest_firmware_version = latest_firmware_version
 
     @property
     def name(self):
@@ -62,7 +60,20 @@ class FirmwareUpdateButton(ButtonEntity):
 
     async def async_press(self):
         """Handle the button press."""
-        if self._sw_version < self._latest_firmware_version:
+        sw_version_entity_id = f"sensor.{self._dongle_id}_sw_version"
+        latest_firmware_entity_id = f"sensor.{self._dongle_id}_latestfirmwareversion"
+
+        sw_version = self.hass.states.get(sw_version_entity_id)
+        latest_firmware_version = self.hass.states.get(latest_firmware_entity_id)
+
+        if sw_version is None or latest_firmware_version is None:
+            _LOGGER.error(f"Could not retrieve version information for {self._dongle_id}.")
+            return
+
+        sw_version = sw_version.state
+        latest_firmware_version = latest_firmware_version.state
+
+        if sw_version < latest_firmware_version:
             # Firmware update is needed
             _LOGGER.info(f"Firmware update button pressed for {self._dongle_id}")
             topic = f"{self._dongle_id}/update"
@@ -71,8 +82,8 @@ class FirmwareUpdateButton(ButtonEntity):
             _LOGGER.info(f"Firmware update request sent to {topic} with payload {payload}")
         else:
             # No update needed
-            _LOGGER.info(f"No firmware update needed for {self._dongle_id}. SW_VERSION: {self._sw_version}, LatestFirmwareVersion: {self._latest_firmware_version}")
-            hass.bus.async_fire(f"{DOMAIN}_notification", {
+            _LOGGER.info(f"No firmware update needed for {self._dongle_id}. SW_VERSION: {sw_version}, LatestFirmwareVersion: {latest_firmware_version}")
+            self.hass.bus.async_fire(f"{DOMAIN}_notification", {
                 "title": "Firmware Update",
                 "message": "No update available for the dongle."
             })

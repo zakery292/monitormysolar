@@ -13,14 +13,14 @@ class MQTTHandler:
         self.hass = hass
         self.client = None
         self.use_ha_mqtt = use_ha_mqtt
+        self.processing = False  # Flag to indicate if a command is being processed
+        self.command_queue = asyncio.Queue()  # Queue to hold pending commands
 
     async def async_setup(self, entry):
         if self.use_ha_mqtt:
-            # Use Home Assistant's MQTT component directly
-            self.client = mqtt
+            self.client = self.hass.components.mqtt
         else:
             import paho.mqtt.client as mqtt_client
-
             self.client = mqtt_client.Client()
 
             config = entry.data
@@ -45,6 +45,22 @@ class MQTTHandler:
             self.client.loop_start()
 
     async def send_update(self, dongle_id, unique_id, value, entity):
+        # Queue the command if one is already being processed
+        if self.processing:
+            _LOGGER.info("MQTT command is already being processed. Command queued.")
+            await self.command_queue.put((dongle_id, unique_id, value, entity))
+            return
+
+        self.processing = True
+        try:
+            await self._process_command(dongle_id, unique_id, value, entity)
+        finally:
+            self.processing = False
+            if not self.command_queue.empty():
+                next_command = await self.command_queue.get()
+                await self.send_update(*next_command)
+
+    async def _process_command(self, dongle_id, unique_id, value, entity):
         # Ensure dongle_id uses '-' instead of '_' and the characters after 'dongle-' are uppercase
         modified_dongle_id = dongle_id.replace("_", "-").split("-")
         modified_dongle_id[1] = modified_dongle_id[1].upper()

@@ -1,11 +1,10 @@
+from datetime import datetime
 import logging
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import callback
 from .const import DOMAIN, ENTITIES, FIRMWARE_CODES
-from datetime import datetime, timedelta
 
 _LOGGER = logging.getLogger(__name__)
-
 
 async def async_setup_entry(hass, entry, async_add_entities):
     inverter_brand = entry.data.get("inverter_brand")

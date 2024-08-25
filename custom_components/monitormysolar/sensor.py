@@ -73,9 +73,8 @@ class InverterSensor(SensorEntity):
     @property
     def last_reset(self):
         """Return the time when the sensor was last reset (midnight)."""
-        if self.state_class == "total_increasing":
-            # Return the start of the current day (midnight)
-            return datetime.combine(datetime.now().date(), datetime.min.time())
+        if self.state_class == "total":
+            return datetime.min
         return None
 
     @property

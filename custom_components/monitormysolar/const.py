@@ -135,6 +135,7 @@ ENTITIES = {
                     {"name": "Voltage PV1", "type": "sensor", "unique_id": "vpv1", "unit_of_measurement": "V", "device_class": "voltage"},
                     {"name": "Voltage PV2", "type": "sensor", "unique_id": "vpv2", "unit_of_measurement": "V", "state_class": "measurement", "device_class": "voltage"},
                     {"name": "Voltage PV3", "type": "sensor", "unique_id": "vpv3", "unit_of_measurement": "V", "state_class": "measurement", "device_class": "voltage", "allowed_device_types": ["E", "F", "G"]},
+                    
                     {"name": "Voltage Battery", "type": "sensor", "unique_id": "vbat", "unit_of_measurement": "V", "state_class": "measurement", "device_class": "voltage"},
                     {"name": "State of Charge", "type": "sensor", "unique_id": "soc", "state_class": "measurement", "unit": "%"},
                     {"name": "State of Health", "type": "sensor", "unique_id": "soh", "state_class": "measurement", "unit": "%"},
@@ -142,6 +143,7 @@ ENTITIES = {
                     {"name": "Power PV1", "type": "sensor", "unique_id": "ppv1", "state_class": "measurement", "unit": "W"},
                     {"name": "Power PV2", "type": "sensor", "unique_id": "ppv2", "state_class": "measurement", "unit": "W"},
                     {"name": "Power PV3", "type": "sensor", "unique_id": "ppv3", "state_class": "measurement", "unit": "W", "allowed_device_types": ["E", "F", "G"]},
+                    {"name": "Power PV All", "type": "sensor", "unique_id": "ppv2", "state_class": "measurement", "unit": "W"},
                     {"name": "Power Charge", "type": "sensor", "unique_id": "pcharge", "state_class": "measurement", "unit": "W"},
                     {"name": "Power Discharge", "type": "sensor", "unique_id": "pdischarge", "state_class": "measurement", "unit": "W"},
                     {"name": "Voltage AC R", "type": "sensor", "unique_id": "vacr", "state_class": "measurement", "unit": "V"},

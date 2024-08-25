@@ -2,6 +2,7 @@ import logging
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import callback
 from .const import DOMAIN, ENTITIES, FIRMWARE_CODES
+from datetime import datetime, timedelta
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,6 +70,14 @@ class InverterSensor(SensorEntity):
     @property
     def device_class(self):
         return self.sensor_info.get("device_class")
+
+    @property
+    def last_reset(self):
+        """Return the time when the sensor was last reset (midnight)."""
+        if self.state_class == "total_increasing":
+            # Return the start of the current day (midnight)
+            return datetime.combine(datetime.now().date(), datetime.min.time())
+        return None
 
     @property
     def device_info(self):

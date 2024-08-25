@@ -81,7 +81,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             await process_message(hass, msg.payload, dongle_id, inverter_brand)
 
     if use_ha_mqtt:
-        await mqttHandeler.async_subscribe(hass, f"{dongle_id}/#", on_message)
+        await mqtt.async_subscribe(hass, f"{dongle_id}/#", on_message)
 
         firmware_code = config.get("firmware_code")
         if firmware_code:
@@ -90,7 +90,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             await setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
         else:
             _LOGGER.warning("Requesting firmware code...")
-            await mqttHandeler.async_publish(hass, f"{dongle_id}/firmwarecode/request", "")
+            await mqtt.async_publish(hass, f"{dongle_id}/firmwarecode/request", "")
 
     else:
         client.on_connect = on_connect

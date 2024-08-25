@@ -143,7 +143,7 @@ ENTITIES = {
                     {"name": "Power PV1", "type": "sensor", "unique_id": "ppv1", "state_class": "measurement", "unit": "W"},
                     {"name": "Power PV2", "type": "sensor", "unique_id": "ppv2", "state_class": "measurement", "unit": "W"},
                     {"name": "Power PV3", "type": "sensor", "unique_id": "ppv3", "state_class": "measurement", "unit": "W", "allowed_device_types": ["E", "F", "G"]},
-                    {"name": "Power PV All", "type": "sensor", "unique_id": "ppv2", "state_class": "measurement", "unit": "W"},
+                    {"name": "Power PV All", "type": "sensor", "unique_id": "Pall", "state_class": "measurement", "unit": "W"},
                     {"name": "Power Charge", "type": "sensor", "unique_id": "pcharge", "state_class": "measurement", "unit": "W"},
                     {"name": "Power Discharge", "type": "sensor", "unique_id": "pdischarge", "state_class": "measurement", "unit": "W"},
                     {"name": "Voltage AC R", "type": "sensor", "unique_id": "vacr", "state_class": "measurement", "unit": "V"},

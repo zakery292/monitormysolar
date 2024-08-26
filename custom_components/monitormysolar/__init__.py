@@ -45,6 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             client.subscribe(f"{dongle_id}/firmwarecode/response")
             client.subscribe(f"{dongle_id}/update")
             client.subscribe(f"{dongle_id}/response")
+            client.subscribe(f"{dongle_id}/#")
 
             firmware_code = config.get("firmware_code")
             if firmware_code:
@@ -54,16 +55,28 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
                 )
             else:
-                _LOGGER.warning("Requesting firmware code...")
+                _LOGGER.warning("Requesting firmware code...Phao MQTT")
                 client.publish(f"{dongle_id}/firmwarecode/request", "")
         else:
             _LOGGER.error(f"Failed to connect to MQTT server, return code {rc}")
 
-    @callback
-    async def on_message(msg):
-        if msg.topic == f"{dongle_id}/firmwarecode/response":
+    def on_message(client, userdata, message):
+        """Handle incoming MQTT messages."""
+        topic = message.topic
+        payload = message.payload.decode("utf-8")
+        _LOGGER.info(f"Received message on topic {topic}: {payload}")
+        
+        # Offload the processing to the Home Assistant event loop
+        hass.loop.call_soon_threadsafe(
+            hass.async_create_task, process_incoming_message(hass, topic, payload, entry, dongle_id, inverter_brand)
+        )
+
+    async def process_incoming_message(hass, topic, payload, entry, dongle_id, inverter_brand):
+        if topic == f"{dongle_id}/firmwarecode/response":
+            _LOGGER.info("Received firmware code response")
+            _LOGGER.warning(f"Payload: {payload}")
             try:
-                data = json.loads(msg.payload)
+                data = json.loads(payload)
                 firmware_code = data.get("FWCode")
                 if firmware_code:
                     hass.data[DOMAIN]["firmware_code"] = firmware_code
@@ -78,10 +91,20 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             except json.JSONDecodeError:
                 _LOGGER.error("Failed to decode JSON from response")
         else:
-            await process_message(hass, msg.payload, dongle_id, inverter_brand)
+            await process_message(hass, payload, dongle_id, inverter_brand)
 
     if use_ha_mqtt:
-        await mqtt.async_subscribe(hass, f"{dongle_id}/#", on_message)
+        def create_mqtt_callback(entry, dongle_id, inverter_brand):
+            async def mqtt_callback(msg):
+                # Directly pass the payload without decoding since it's already a string
+                await process_incoming_message(hass, msg.topic, msg.payload, entry, dongle_id, inverter_brand)
+            return mqtt_callback
+
+        # Create the callback with the additional arguments
+        callback_with_args = create_mqtt_callback(entry, dongle_id, inverter_brand)
+
+        # Subscribe using the callback
+        await mqtt.async_subscribe(hass, f"{dongle_id}/#", callback_with_args)
 
         firmware_code = config.get("firmware_code")
         if firmware_code:
@@ -89,7 +112,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             _LOGGER.info(f"Firmware code found in config entry: {firmware_code}")
             await setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
         else:
-            _LOGGER.debug("Requesting firmware code...")
+            _LOGGER.debug("Requesting firmware code... HA MQTT")
             await mqtt.async_publish(hass, f"{dongle_id}/firmwarecode/request", "")
 
     else:
@@ -104,6 +127,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             return False
 
     return True
+
 
 async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
     """Set up the entities based on the firmware code."""

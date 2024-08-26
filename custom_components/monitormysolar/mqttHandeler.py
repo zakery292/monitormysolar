@@ -15,6 +15,7 @@ class MQTTHandler:
         self.use_ha_mqtt = use_ha_mqtt
         self.processing = False  # Flag to indicate if a command is being processed
         self.command_queue = asyncio.Queue()  # Queue to hold pending commands
+        self.last_time_update = None
 
     async def async_setup(self, entry):
         if self.use_ha_mqtt:
@@ -45,7 +46,14 @@ class MQTTHandler:
             self.client.loop_start()
 
     async def send_update(self, dongle_id, unique_id, value, entity):
-        # Queue the command if one is already being processed
+        # Rate limiting logic: only allow one update per 10 seconds
+        now = datetime.now()
+        if self.last_time_update and (now - self.last_time_update).total_seconds() < 10:
+            _LOGGER.debug(f"Rate limit hit for {entity.entity_id}. Dropping update.")
+            return
+
+        self.last_time_update = now
+
         if self.processing:
             _LOGGER.info("MQTT command is already being processed. Command queued.")
             await self.command_queue.put((dongle_id, unique_id, value, entity))
@@ -89,3 +97,4 @@ class MQTTHandler:
             response_topic = f"{modified_dongle_id}/response"
             self.client.subscribe(response_topic)
             self.client.message_callback_add(response_topic, response_received)
+

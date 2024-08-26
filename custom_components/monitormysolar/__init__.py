@@ -89,7 +89,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             _LOGGER.info(f"Firmware code found in config entry: {firmware_code}")
             await setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
         else:
-            _LOGGER.warning("Requesting firmware code...")
+            _LOGGER.debug("Requesting firmware code...")
             await mqtt.async_publish(hass, f"{dongle_id}/firmwarecode/request", "")
 
     else:
@@ -122,7 +122,7 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
     """Determine the entity type based on the entity_id_suffix."""
     brand_entities = ENTITIES.get(inverter_brand, {})
     if not brand_entities:
-        _LOGGER.warning(f"No entities defined for inverter brand: {inverter_brand}. Defaulting to 'sensor'.")
+        _LOGGER.debug(f"No entities defined for inverter brand: {inverter_brand}. Defaulting to 'sensor'.")
         return "sensor"
 
     entity_id_suffix_lower = entity_id_suffix.lower()
@@ -142,7 +142,7 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
                         _LOGGER.debug(f"Matched entity_id_suffix '{entity_id_suffix_lower}' to entity type '{entity_type}'.")
                         return entity_type
 
-    _LOGGER.warning(f"Could not match entity_id_suffix '{entity_id_suffix_lower}'. Defaulting to 'sensor'.")
+    _LOGGER.debug(f"Could not match entity_id_suffix '{entity_id_suffix_lower}'. Defaulting to 'sensor'.")
     return "sensor"
 
 async def process_message(hass, payload, dongle_id, inverter_brand):

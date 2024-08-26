@@ -1,8 +1,9 @@
 import logging
 import asyncio
+from datetime import datetime
 import json
 from homeassistant.core import HomeAssistant
-from homeassistant.components import mqtt
+from homeassistant.components.mqtt import async_publish
 
 from .const import DOMAIN
 
@@ -15,10 +16,11 @@ class MQTTHandler:
         self.use_ha_mqtt = use_ha_mqtt
         self.processing = False  # Flag to indicate if a command is being processed
         self.command_queue = asyncio.Queue()  # Queue to hold pending commands
+        self.last_time_update = None
 
     async def async_setup(self, entry):
         if self.use_ha_mqtt:
-            self.client = self.hass.components.mqtt
+            self.client = None  # No need to assign anything here when using Home Assistant's MQTT
         else:
             import paho.mqtt.client as mqtt_client
             self.client = mqtt_client.Client()
@@ -36,16 +38,21 @@ class MQTTHandler:
                 if rc == 0:
                     _LOGGER.info("Connected to MQTT server")
                 else:
-                    _LOGGER.error(
-                        "Failed to connect to MQTT server, return code %d", rc
-                    )
+                    _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)
 
             self.client.on_connect = on_connect
             self.client.connect(mqtt_server, mqtt_port, 60)
             self.client.loop_start()
 
     async def send_update(self, dongle_id, unique_id, value, entity):
-        # Queue the command if one is already being processed
+        # Rate limiting logic: only allow one update per 10 seconds
+        now = datetime.now()
+        if self.last_time_update and (now - self.last_time_update).total_seconds() < 10:
+            _LOGGER.warning(f"Rate limit hit for {entity.entity_id}. Dropping update.")
+            return
+
+        self.last_time_update = now
+
         if self.processing:
             _LOGGER.info("MQTT command is already being processed. Command queued.")
             await self.command_queue.put((dongle_id, unique_id, value, entity))
@@ -71,14 +78,12 @@ class MQTTHandler:
         _LOGGER.warning(f"Sending MQTT update: {topic} - {payload}")
 
         if self.use_ha_mqtt:
-            await self.client.async_publish(self.hass, topic, payload)
+            await async_publish(self.hass, topic, payload)  # Use async_publish directly
         else:
             self.client.publish(topic, payload)
 
         def response_received(client, userdata, message):
-            _LOGGER.warning(
-                f"Received response for topic {message.topic}: {message.payload}"
-            )
+            _LOGGER.warning(f"Received response for topic {message.topic}: {message.payload}")
             if message.payload.decode() == "success":
                 entity._state = value
                 entity.async_write_ha_state()

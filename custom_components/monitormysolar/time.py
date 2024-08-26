@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from homeassistant.components.datetime import DateTimeEntity
 from homeassistant.components.time import TimeEntity
 from homeassistant.core import callback
@@ -136,7 +136,8 @@ class InverterTime(TimeEntity):
         self.entity_id = f"time.{self._device_id}_{self._entity_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
-        self._skip_mqtt = False  # Flag to prevent MQTT loops
+        self._last_mqtt_update = None
+        self._debounce_task = None
 
     @property
     def name(self):
@@ -160,18 +161,27 @@ class InverterTime(TimeEntity):
 
     async def async_set_value(self, value):
         """Set the time value."""
-        if self._skip_mqtt:
-            _LOGGER.debug(f"Skipping MQTT update for {self.entity_id}")
-            self._skip_mqtt = False
-            return
+        now = datetime.now()
 
-        _LOGGER.debug(f"Setting time value for {self.entity_id} to {value}")
-        await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
-            self._dongle_id.replace("_", "-"),
-            self.entity_info["unique_id"],
-            value.isoformat(),
-            self,
-        )
+        # Debounce logic to delay the MQTT update and prevent multiple messages
+        if self._debounce_task:
+            self._debounce_task.cancel()
+
+        async def debounce():
+            await asyncio.sleep(0.5)
+            if self._last_mqtt_update and (now - self._last_mqtt_update).total_seconds() < 5:
+                _LOGGER.debug(f"Skipping MQTT update for {self.entity_id} due to recent MQTT update")
+                return
+
+            _LOGGER.debug(f"Setting time value for {self.entity_id} to {value}")
+            await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
+                self._dongle_id.replace("_", "-"),
+                self.entity_info["unique_id"],
+                value.isoformat(),
+                self,
+            )
+
+        self._debounce_task = asyncio.create_task(debounce())
 
     def revert_state(self):
         """Revert to the previous state."""
@@ -187,7 +197,7 @@ class InverterTime(TimeEntity):
             _LOGGER.debug(f"Received event for time {self.entity_id}: {value}")
             if value is not None:
                 self._state = value
-                self._skip_mqtt = True  # Set flag to skip MQTT update
+                self._last_mqtt_update = datetime.now()
                 _LOGGER.debug(f"Time {self.entity_id} state updated to {value}")
                 self.async_write_ha_state()
 

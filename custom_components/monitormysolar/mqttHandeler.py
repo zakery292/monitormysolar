@@ -1,9 +1,9 @@
 import logging
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
 from homeassistant.core import HomeAssistant
-from homeassistant.components import mqtt
+from homeassistant.components.mqtt import async_publish
 
 from .const import DOMAIN
 
@@ -20,7 +20,7 @@ class MQTTHandler:
 
     async def async_setup(self, entry):
         if self.use_ha_mqtt:
-            self.client = self.hass.components.mqtt
+            self.client = None  # No need to assign anything here when using Home Assistant's MQTT
         else:
             import paho.mqtt.client as mqtt_client
             self.client = mqtt_client.Client()
@@ -38,9 +38,7 @@ class MQTTHandler:
                 if rc == 0:
                     _LOGGER.info("Connected to MQTT server")
                 else:
-                    _LOGGER.error(
-                        "Failed to connect to MQTT server, return code %d", rc
-                    )
+                    _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)
 
             self.client.on_connect = on_connect
             self.client.connect(mqtt_server, mqtt_port, 60)
@@ -80,14 +78,12 @@ class MQTTHandler:
         _LOGGER.warning(f"Sending MQTT update: {topic} - {payload}")
 
         if self.use_ha_mqtt:
-            await self.client.async_publish(self.hass, topic, payload)
+            await async_publish(self.hass, topic, payload)  # Use async_publish directly
         else:
             self.client.publish(topic, payload)
 
         def response_received(client, userdata, message):
-            _LOGGER.warning(
-                f"Received response for topic {message.topic}: {message.payload}"
-            )
+            _LOGGER.warning(f"Received response for topic {message.topic}: {message.payload}")
             if message.payload.decode() == "success":
                 entity._state = value
                 entity.async_write_ha_state()
@@ -98,4 +94,3 @@ class MQTTHandler:
             response_topic = f"{modified_dongle_id}/response"
             self.client.subscribe(response_topic)
             self.client.message_callback_add(response_topic, response_received)
-

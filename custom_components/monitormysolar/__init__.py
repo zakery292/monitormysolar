@@ -142,7 +142,7 @@ def determine_entity_type(entity_id_suffix, inverter_brand):
                         _LOGGER.debug(f"Matched entity_id_suffix '{entity_id_suffix_lower}' to entity type '{entity_type}'.")
                         return entity_type
 
-    _LOGGER.warning(f"Could not match entity_id_suffix '{entity_id_suffix_lower}'. Defaulting to 'sensor'.")
+    _LOGGER.debug(f"Could not match entity_id_suffix '{entity_id_suffix_lower}'. Defaulting to 'sensor'.")
     return "sensor"
 
 async def process_message(hass, payload, dongle_id, inverter_brand):

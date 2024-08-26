@@ -1,4 +1,4 @@
-# Monitor My Solar Home assistant integration DEV BRANCH! THIS MAY NOT BE STABLE OR WORK! 
+# Monitor My Solar Home assistant integration
 This solution was devloped to take over from where others have started, this integration only works with hardware purchased from us directly at https://monitormy.solar
 This integration is designed to make adding your inverter to home assistant without the complexity of creating modbus solutions or other funky hardware the dongle is designed to plug in and replace your current dongle connected to your inverter
 for some brands not others (listed below) you can use our dongle to communicate with the manufacturers portal as well as our own and home assistant. 

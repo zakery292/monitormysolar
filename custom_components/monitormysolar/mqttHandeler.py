@@ -1,5 +1,6 @@
 import logging
 import asyncio
+from datetime import datetime, timedelta
 import json
 from homeassistant.core import HomeAssistant
 from homeassistant.components import mqtt
@@ -49,7 +50,7 @@ class MQTTHandler:
         # Rate limiting logic: only allow one update per 10 seconds
         now = datetime.now()
         if self.last_time_update and (now - self.last_time_update).total_seconds() < 10:
-            _LOGGER.debug(f"Rate limit hit for {entity.entity_id}. Dropping update.")
+            _LOGGER.warning(f"Rate limit hit for {entity.entity_id}. Dropping update.")
             return
 
         self.last_time_update = now

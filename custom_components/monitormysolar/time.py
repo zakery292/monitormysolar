@@ -74,12 +74,12 @@ class InverterTime(TimeEntity):
             self._debounce_task.cancel()
 
         async def debounce():
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1)
             if self._last_mqtt_update and (now - self._last_mqtt_update).total_seconds() < 10:
-                _LOGGER.debug(f"Skipping MQTT update for {self.entity_id} due to rate limiting")
+                _LOGGER.warning(f"Skipping MQTT update for {self.entity_id} due to rate limiting")
                 return
 
-            _LOGGER.debug(f"Setting time value for {self.entity_id} to {value}")
+            _LOGGER.warning(f"Setting time value for {self.entity_id} to {value}")
             await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
                 self._dongle_id.replace("_", "-"),
                 self.entity_info["unique_id"],

@@ -1,4 +1,4 @@
-# Monitor My Solar Home assistant integration DEV BRANCH! THIS MAY NOT BE STABLE OR WORK! 
+# Monitor My Solar Home assistant integration
 This solution was devloped to take over from where others have started, this integration only works with hardware purchased from us directly at https://monitormy.solar
 This integration is designed to make adding your inverter to home assistant without the complexity of creating modbus solutions or other funky hardware the dongle is designed to plug in and replace your current dongle connected to your inverter
 for some brands not others (listed below) you can use our dongle to communicate with the manufacturers portal as well as our own and home assistant. 
@@ -6,6 +6,13 @@ for some brands not others (listed below) you can use our dongle to communicate 
 
 # What is this and what does it do? 
 This integration is as simple as it sounds, connect the dongle get all the entites and sensors your inverter has to offer with read and write capabilities. 
+
+## For issues please see the issues tab
+- if there are settings missing you would like add these to the issue already raised we will add these and then update the list with the firmware that fixes these
+- If there are settings issues please add a comment to the issue and we will add them to the list with a firmware response or HA version respons
+- if there are integration issues please add these to the issue already open and we will add these to the list with the known fix
+- if there is a issue that is worthy of its own issue the please raise a seperate issue with as much information as possible.
+- If you have a dongle issue then please raise a issue and we can look into it. 
 
 # What inverters do you support? 
 We support the following inverters in home assistant and our monitoring portal 
@@ -17,6 +24,18 @@ We support the following inverters in home assistant and our monitoring portal
 ## Want other inverters? submit a issue and we will look into the most popular ones
 
 # Now the important part! How to install?
+
+## Install Quirks......
+- Make sure the dongle is already sending data to the MQTT broker of your choice local in home assistant or extnernal
+- MQTT connection requires a username and password, if using homeassistants mosquitto broker you can create a user in home assistant called mqtt with a password and use this account
+- if the integration installs, but there are no entites check the logs, if it says failed to load you probabaly messed up the MQTT bit or the dongle id
+- Dongle ID is with a lowercase 'D'
+- If the dongle says its connected to mqtt its connected the issue is your setup in home assistant
+- Download MQTT FX it will be the best thing you can do to debug MQTT related issues. If MQTT FX can connect then anything can.
+- if using Mosquitto DO NOT CHANGE THE DEFAULT SERVER SETTINGS
+- We do not support MQTT over SSL
+# You have to use 24 hour time in homeassistant in youre profile and so do all users. 
+There is a bug in core that ive reported that when using 12 hour time the time entitys spam update to MQTT on state change. there is a rate limit in place of one time setting per 10 seconds with a debounce included so you can update minutes and secons in one go. if you find the time is not updating correctly this is a home assistant issue untill this is fixed we will not remove the ratelimit for time settings. 
 
 ## Step 1:
 

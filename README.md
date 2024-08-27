@@ -7,6 +7,13 @@ for some brands not others (listed below) you can use our dongle to communicate 
 # What is this and what does it do? 
 This integration is as simple as it sounds, connect the dongle get all the entites and sensors your inverter has to offer with read and write capabilities. 
 
+## For issues please see the issues tab
+- if there are settings missing you would like add these to the issue already raised we will add these and then update the list with the firmware that fixes these
+- If there are settings issues please add a comment to the issue and we will add them to the list with a firmware response or HA version respons
+- if there are integration issues please add these to the issue already open and we will add these to the list with the known fix
+- if there is a issue that is worthy of its own issue the please raise a seperate issue with as much information as possible.
+- If you have a dongle issue then please raise a issue and we can look into it. 
+
 # What inverters do you support? 
 We support the following inverters in home assistant and our monitoring portal 
 - Lux Power

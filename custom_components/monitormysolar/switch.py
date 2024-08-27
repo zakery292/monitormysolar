@@ -67,6 +67,10 @@ class InverterSwitch(SwitchEntity):
         """Turn the switch on."""
         mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
         if mqtt_handler is not None:
+            self._previous_state = self._state  # Save the current state before changing
+            self._state = True  # Optimistically update the state in HA
+            self.async_write_ha_state()  # Update HA state immediately
+
             await mqtt_handler.send_update(
                 self._dongle_id, self.entity_info["unique_id"], 1, self
             )
@@ -77,6 +81,10 @@ class InverterSwitch(SwitchEntity):
         """Turn the switch off."""
         mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
         if mqtt_handler is not None:
+            self._previous_state = self._state  # Save the current state before changing
+            self._state = False  # Optimistically update the state in HA
+            self.async_write_ha_state()  # Update HA state immediately
+
             await mqtt_handler.send_update(
                 self._dongle_id, self.entity_info["unique_id"], 0, self
             )
@@ -92,16 +100,21 @@ class InverterSwitch(SwitchEntity):
     @callback
     def _handle_event(self, event):
         """Handle the event."""
-        _LOGGER.debug(f"Handling event for switch {self.entity_id}: {event.data}")
+       # _LOGGER.debug(f"Handling event for switch {self.entity_id}: {event.data}")
         event_entity_id = event.data.get("entity").lower().replace("-", "_")
         if event_entity_id == self.entity_id:
             value = event.data.get("value")
-            _LOGGER.debug(f"Received event for switch {self.entity_id}: {value}")
+            #_LOGGER.debug(f"Received event for switch {self.entity_id}: {value}")
             if value is not None:
                 self._state = bool(value)
-                _LOGGER.debug(f"Switch {self.entity_id} state updated to {value}")
+                #_LOGGER.debug(f"Switch {self.entity_id} state updated to {value}")
                 # Schedule state update on the main thread
                 self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
+
+    async def async_will_remove_from_hass(self):
+        """Unsubscribe from events when removed."""
+        _LOGGER.debug(f"Switch {self.entity_id} will be removed from hass")
+        self.hass.bus._async_remove_listener(f"{DOMAIN}_switch_updated", self._handle_event)
 
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""

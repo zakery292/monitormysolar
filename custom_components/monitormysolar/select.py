@@ -84,11 +84,11 @@ class InverterSelect(SelectEntity):
     @callback
     def _handle_event(self, event):
         """Handle the event."""
-        _LOGGER.debug(f"Handling event for select {self.entity_id}: {event.data}")
+       # _LOGGER.debug(f"Handling event for select {self.entity_id}: {event.data}")
         event_entity_id = event.data.get("entity").lower().replace("-", "_")
         if event_entity_id == self.entity_id:
             value = event.data.get("value")
-            _LOGGER.debug(f"Received event for select {self.entity_id}: {value}")
+            #_LOGGER.debug(f"Received event for select {self.entity_id}: {value}")
             if value is not None:
                 self._state = (
                     self._options[value]
@@ -98,9 +98,13 @@ class InverterSelect(SelectEntity):
                 _LOGGER.debug(f"Select {self.entity_id} state updated to {self._state}")
                 # Schedule state update on the main thread
                 self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
+    async def async_will_remove_from_hass(self):
+        """Unsubscribe from events when removed."""
+        _LOGGER.debug(f"Select {self.entity_id} will be removed from hass")
+        self.hass.bus._async_remove_listener(f"{DOMAIN}_select_updated", self._handle_event)
 
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
-        _LOGGER.debug(f"Select {self.entity_id} added to hass")
+       # _LOGGER.debug(f"Select {self.entity_id} added to hass")
         self.hass.bus.async_listen(f"{DOMAIN}_select_updated", self._handle_event)
-        _LOGGER.debug(f"Select {self.entity_id} subscribed to event")
+        #_LOGGER.debug(f"Select {self.entity_id} subscribed to event")

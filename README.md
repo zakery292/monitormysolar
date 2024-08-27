@@ -25,6 +25,18 @@ We support the following inverters in home assistant and our monitoring portal
 
 # Now the important part! How to install?
 
+## Install Quirks......
+- Make sure the dongle is already sending data to the MQTT broker of your choice local in home assistant or extnernal
+- MQTT connection requires a username and password, if using homeassistants mosquitto broker you can create a user in home assistant called mqtt with a password and use this account
+- if the integration installs, but there are no entites check the logs, if it says failed to load you probabaly messed up the MQTT bit or the dongle id
+- Dongle ID is with a lowercase 'D'
+- If the dongle says its connected to mqtt its connected the issue is your setup in home assistant
+- Download MQTT FX it will be the best thing you can do to debug MQTT related issues. If MQTT FX can connect then anything can.
+- if using Mosquitto DO NOT CHANGE THE DEFAULT SERVER SETTINGS
+- We do not support MQTT over SSL
+# You have to use 24 hour time in homeassistant in youre profile and so do all users. 
+There is a bug in core that ive reported that when using 12 hour time the time entitys spam update to MQTT on state change. there is a rate limit in place of one time setting per 10 seconds with a debounce included so you can update minutes and secons in one go. if you find the time is not updating correctly this is a home assistant issue untill this is fixed we will not remove the ratelimit for time settings. 
+
 ## Step 1:
 
 - For the installation of this integration, you will need to have a working Home Assistant installation. If you do not have one, you can get one here: [Home Assistant Installation](https://www.home-assistant.io/installation/)

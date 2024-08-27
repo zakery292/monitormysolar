@@ -22,7 +22,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     async_add_entities(entities, True)
 
-
 class InverterTime(TimeEntity):
     def __init__(self, entity_info, hass, entry, dongle_id):
         """Initialize the Time entity."""
@@ -96,11 +95,13 @@ class InverterTime(TimeEntity):
             self._state = value
             self._last_mqtt_update = datetime.now()
             _LOGGER.debug(f"Time {self.entity_id} state updated to {value}")
-            self.async_write_ha_state()
+            # Schedule state update on the main thread
+            self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     def revert_state(self):
         """Revert to the previous state."""
-        self.async_write_ha_state()
+        # Schedule state revert on the main thread
+        self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     @callback
     def _handle_event(self, event):
@@ -118,4 +119,3 @@ class InverterTime(TimeEntity):
         _LOGGER.debug(f"Time {self.entity_id} added to hass")
         self.hass.bus.async_listen(f"{DOMAIN}_time_updated", self._handle_event)
         _LOGGER.debug(f"Time {self.entity_id} subscribed to event")
-

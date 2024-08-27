@@ -17,6 +17,7 @@ class MQTTHandler:
         self.processing = False  # Flag to indicate if a command is being processed
         self.command_queue = asyncio.Queue()  # Queue to hold pending commands
         self.last_time_update = None
+        self.connected = False  # Track the connection status
 
     async def async_setup(self, entry):
         if self.use_ha_mqtt:
@@ -37,12 +38,31 @@ class MQTTHandler:
             def on_connect(client, userdata, flags, rc):
                 if rc == 0:
                     _LOGGER.info("Connected to MQTT server")
+                    self.connected = True
                 else:
                     _LOGGER.error("Failed to connect to MQTT server, return code %d", rc)
+                    self.connected = False
+
+            def on_disconnect(client, userdata, rc):
+                _LOGGER.warning("Disconnected from MQTT server")
+                self.connected = False
+                asyncio.run_coroutine_threadsafe(self.reconnect(), self.hass.loop)
 
             self.client.on_connect = on_connect
+            self.client.on_disconnect = on_disconnect
             self.client.connect(mqtt_server, mqtt_port, 60)
             self.client.loop_start()
+
+    async def reconnect(self):
+        """Attempt to reconnect to the MQTT broker."""
+        while not self.connected:
+            try:
+                _LOGGER.info("Attempting to reconnect to MQTT server...")
+                self.client.reconnect()
+                await asyncio.sleep(5)
+            except Exception as e:
+                _LOGGER.error(f"Reconnection attempt failed: {e}")
+                await asyncio.sleep(10)
 
     async def send_update(self, dongle_id, unique_id, value, entity):
         # Rate limiting logic: only allow one update per 10 seconds
@@ -86,9 +106,10 @@ class MQTTHandler:
             _LOGGER.warning(f"Received response for topic {message.topic}: {message.payload}")
             if message.payload.decode() == "success":
                 entity._state = value
-                entity.async_write_ha_state()
+                # Schedule the state update on the event loop thread
+                self.hass.loop.call_soon_threadsafe(entity.async_write_ha_state)
             else:
-                entity.revert_state()
+                self.hass.loop.call_soon_threadsafe(entity.revert_state)
 
         if not self.use_ha_mqtt:
             response_topic = f"{modified_dongle_id}/response"

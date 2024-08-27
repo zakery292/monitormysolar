@@ -51,7 +51,9 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             if firmware_code:
                 hass.data[DOMAIN]["firmware_code"] = firmware_code
                 _LOGGER.info(f"Firmware code found in config entry: {firmware_code}")
-                hass.async_create_task(
+                # Safely schedule the task to be run on the event loop
+                hass.loop.call_soon_threadsafe(
+                    hass.async_create_task, 
                     setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
                 )
             else:

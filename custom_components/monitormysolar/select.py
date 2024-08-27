@@ -5,7 +5,6 @@ from .const import DOMAIN, ENTITIES
 
 _LOGGER = logging.getLogger(__name__)
 
-
 async def async_setup_entry(hass, entry, async_add_entities):
     inverter_brand = entry.data.get("inverter_brand")
     dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
@@ -21,7 +20,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 _LOGGER.error(f"Error setting up select {select}: {e}")
 
     async_add_entities(entities, True)
-
 
 class InverterSelect(SelectEntity):
     def __init__(self, entity_info, hass, entry, dongle_id):
@@ -67,7 +65,8 @@ class InverterSelect(SelectEntity):
         """Update the select option."""
         _LOGGER.info(f"Setting select option for {self.entity_id} to {option}")
         self._state = option
-        self.async_write_ha_state()
+        # Schedule state update on the main thread
+        self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
         bit_value = self._options.index(option)
         await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
             self._dongle_id.replace("_", "-"),
@@ -79,7 +78,8 @@ class InverterSelect(SelectEntity):
     def revert_state(self):
         """Revert to the previous state."""
         _LOGGER.info(f"Reverting state for {self.entity_id} to {self._state}")
-        self.async_write_ha_state()
+        # Schedule state revert on the main thread
+        self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     @callback
     def _handle_event(self, event):
@@ -96,7 +96,8 @@ class InverterSelect(SelectEntity):
                     else value
                 )
                 _LOGGER.debug(f"Select {self.entity_id} state updated to {self._state}")
-                self.async_write_ha_state()
+                # Schedule state update on the main thread
+                self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""

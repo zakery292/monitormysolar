@@ -6,7 +6,6 @@ from .const import DOMAIN, ENTITIES
 
 _LOGGER = logging.getLogger(__name__)
 
-
 async def async_setup_entry(hass, entry, async_add_entities):
     inverter_brand = entry.data.get("inverter_brand")
     dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
@@ -24,7 +23,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 _LOGGER.error(f"Error setting up number {number}: {e}")
 
     async_add_entities(entities, True)
-
 
 class InverterNumber(NumberEntity):
     def __init__(self, entity_info, hass, entry, dongle_id, bank_name):
@@ -112,7 +110,8 @@ class InverterNumber(NumberEntity):
             if value is not None:
                 self._value = value
                 _LOGGER.debug(f"Number {self.entity_id} value updated to {value}")
-                self.async_write_ha_state()
+                # Schedule state update on the main thread
+                self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""

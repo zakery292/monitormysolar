@@ -14,7 +14,6 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-
 class InverterMQTTFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Inverter MQTT."""
 
@@ -23,10 +22,10 @@ class InverterMQTTFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         errors = {}
 
-        _LOGGER.warning("Loading the user step form")
+        _LOGGER.debug("Loading the user step form")
 
         if user_input is not None:
-            _LOGGER.warning("User input received: %s", user_input)
+            _LOGGER.debug("User input received: %s", user_input)
 
             mqtt_server = user_input.get("mqtt_server", DEFAULT_MQTT_SERVER)
             mqtt_port = user_input.get("mqtt_port", DEFAULT_MQTT_PORT)
@@ -46,7 +45,7 @@ class InverterMQTTFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 errors["base"] = "cannot_connect"
 
-        _LOGGER.warning("Displaying the form with translations")
+        _LOGGER.debug("Displaying the form with translations")
 
         schema = vol.Schema(
             {
@@ -63,7 +62,7 @@ class InverterMQTTFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         form = self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
-        _LOGGER.warning("Form: %s", form)
+        _LOGGER.debug("Form: %s", form)
         return form
 
     async def _test_mqtt_connection(self, server, port, username, password):

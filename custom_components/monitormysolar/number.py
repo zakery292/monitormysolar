@@ -6,7 +6,6 @@ from .const import DOMAIN, ENTITIES
 
 _LOGGER = logging.getLogger(__name__)
 
-
 async def async_setup_entry(hass, entry, async_add_entities):
     inverter_brand = entry.data.get("inverter_brand")
     dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
@@ -24,7 +23,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 _LOGGER.error(f"Error setting up number {number}: {e}")
 
     async_add_entities(entities, True)
-
 
 class InverterNumber(NumberEntity):
     def __init__(self, entity_info, hass, entry, dongle_id, bank_name):
@@ -46,6 +44,7 @@ class InverterNumber(NumberEntity):
         self._native_unit_of_measurement = entity_info.get("native_unit_of_measurement", None)
         self._device_class = entity_info.get("device_class", None)
         self._manufacturer = entry.data.get("inverter_brand")
+        self._previous_value = self._value  # Track the previous value for revert
 
     @property
     def name(self):
@@ -87,11 +86,17 @@ class InverterNumber(NumberEntity):
             "manufacturer": f"{self._manufacturer}",
         }
 
-    async def async_set_value(self, value):
+    async def async_set_native_value(self, value):
         """Set the number value."""
         _LOGGER.debug(f"Setting value of number {self.entity_id} to {value}")
         mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
         if mqtt_handler is not None:
+            # Save the current value before changing
+            self._previous_value = self._value
+            # Set the new value
+            self._value = value
+
+            # Send the update via MQTT
             await mqtt_handler.send_update(
                 self._dongle_id.replace("_", "-"),
                 self.entity_info["unique_id"],
@@ -101,28 +106,36 @@ class InverterNumber(NumberEntity):
         else:
             _LOGGER.error("MQTT Handler is not initialized")
 
+    def revert_state(self):
+        """Revert to the previous state."""
+        _LOGGER.info(f"Reverting state for {self.entity_id} to {self._previous_value}")
+        self._value = self._previous_value
+        # Schedule state revert on the main thread
+        self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
+
     @callback
     def _handle_event(self, event):
         """Handle the event."""
-        _LOGGER.debug(f"Handling event for number {self.entity_id}: {event.data}")
+       #_LOGGER.debug(f"Handling event for number {self.entity_id}: {event.data}")
         event_entity_id = event.data.get("entity").lower().replace("-", "_")
         if event_entity_id == self.entity_id:
             value = event.data.get("value")
-            _LOGGER.debug(f"Received event for number {self.entity_id}: {value}")
+            #_LOGGER.debug(f"Received event for number {self.entity_id}: {value}")
             if value is not None:
                 self._value = value
-                _LOGGER.debug(f"Number {self.entity_id} value updated to {value}")
-                self.async_write_ha_state()
+                #_LOGGER.debug(f"Number {self.entity_id} value updated to {value}")
+                # Schedule state update on the main thread
+                self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
-        _LOGGER.debug(f"Number {self.entity_id} added to hass")
+        #_LOGGER.debug(f"Number {self.entity_id} added to hass")
         self.hass.bus.async_listen(f"{DOMAIN}_number_updated", self._handle_event)
-        _LOGGER.debug(f"Number {self.entity_id} subscribed to event")
+       # _LOGGER.debug(f"Number {self.entity_id} subscribed to event")
 
     async def async_will_remove_from_hass(self):
         """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Number {self.entity_id} will be removed from hass")
-        self.hass.bus.async_remove_listener(
+       # _LOGGER.debug(f"Number {self.entity_id} will be removed from hass")
+        self.hass.bus._async_remove_listener(
             f"{DOMAIN}_number_updated", self._handle_event
         )

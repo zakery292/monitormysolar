@@ -22,7 +22,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     async_add_entities(entities, True)
 
-
 class InverterTime(TimeEntity):
     def __init__(self, entity_info, hass, entry, dongle_id):
         """Initialize the Time entity."""
@@ -76,10 +75,10 @@ class InverterTime(TimeEntity):
         async def debounce():
             await asyncio.sleep(1)
             if self._last_mqtt_update and (now - self._last_mqtt_update).total_seconds() < 10:
-                _LOGGER.warning(f"Skipping MQTT update for {self.entity_id} due to rate limiting")
+                _LOGGER.debug(f"Skipping MQTT update for {self.entity_id} due to rate limiting")
                 return
 
-            _LOGGER.warning(f"Setting time value for {self.entity_id} to {value}")
+            _LOGGER.debug(f"Setting time value for {self.entity_id} to {value}")
             await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
                 self._dongle_id.replace("_", "-"),
                 self.entity_info["unique_id"],
@@ -96,26 +95,32 @@ class InverterTime(TimeEntity):
             self._state = value
             self._last_mqtt_update = datetime.now()
             _LOGGER.debug(f"Time {self.entity_id} state updated to {value}")
-            self.async_write_ha_state()
+            # Schedule state update on the main thread
+            self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     def revert_state(self):
         """Revert to the previous state."""
-        self.async_write_ha_state()
+        # Schedule state revert on the main thread
+        self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     @callback
     def _handle_event(self, event):
         """Handle the event."""
-        _LOGGER.debug(f"Handling event for time {self.entity_id}: {event.data}")
+        # _LOGGER.debug(f"Handling event for time {self.entity_id}: {event.data}")  # Ensure comments are well-formed
         event_entity_id = event.data.get("entity").lower().replace("-", "_")
         if event_entity_id == self.entity_id:
             value = event.data.get("value")
-            _LOGGER.debug(f"Received event for time {self.entity_id}: {value}")
+            # _LOGGER.debug(f"Received event for time {self.entity_id}: {value}")  # Ensure comments are well-formed
             if value is not None:
                 self.update_state(value)
 
+    async def async_will_remove_from_hass(self):
+        """Unsubscribe from events when removed."""
+        _LOGGER.debug(f"Time {self.entity_id} will be removed from hass")
+        self.hass.bus._async_remove_listener(f"{DOMAIN}_time_updated", self._handle_event)
+
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
-        _LOGGER.debug(f"Time {self.entity_id} added to hass")
+        #_LOGGER.debug(f"Time {self.entity_id} added to hass")
         self.hass.bus.async_listen(f"{DOMAIN}_time_updated", self._handle_event)
-        _LOGGER.debug(f"Time {self.entity_id} subscribed to event")
-
+        #_LOGGER.debug(f"Time {self.entity_id} subscribed to event")

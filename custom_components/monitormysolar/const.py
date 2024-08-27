@@ -237,7 +237,7 @@ ENTITIES = {
                 "holdbank2": [
                     {"name": "Active Power", "type": "number", "unique_id": "ActivePowerPercentCMD", "unit": "PERCENT", "min": 0, "max": 100 , "mode": "slider"},
                     {"name": "Charge Power Rate", "type": "number", "unique_id": "ChargePowerPercentCMD", "unit": "PERCENT", "min": 0, "max": 100, "mode": "slider"},
-                    {"name": "Discharge Power Rate", "type": "number", "unique_id": "DischargePowerPercentCMD", "unit": "PERCENT", "min": 0, "max": 100 , "mode": "slider"},
+                    {"name": "Discharge Power Rate", "type": "number", "unique_id": "DischgPowerPercentCMD", "unit": "PERCENT", "min": 0, "max": 100 , "mode": "slider"},
                     {"name": "AC Charge Rate", "type": "number", "unique_id": "ACChgPowerCMD", "unit": "PERCENT", "min": 0, "max": 100, "mode": "slider"},
                     {"name": "SOC Limit", "type": "number", "unique_id": "ACChgSOCLimit", "unit": "PERCENT", "min": 0, "max": 100, "mode": "slider", "class": "BATTERY"},
                     {"name": "Charge First Rate", "type": "number", "unique_id": "ChgFirstPowerCMD", "unit": "PERCENT", "min": 0, "max": 100, "mode": "slider"},

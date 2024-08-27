@@ -92,13 +92,18 @@ class InverterSensor(SensorEntity):
         event_entity_id = event.data.get("entity").lower().replace("-", "_")
         if event_entity_id == self.entity_id:
             value = event.data.get("value")
-            _LOGGER.debug(f"Received event for sensor {self.entity_id}: {value}")
+           #_LOGGER.debug(f"Received event for sensor {self.entity_id}: {value}")
             if value is not None:
                 self._state = (
                     round(value, 2) if isinstance(value, (float, int)) else value
                 )
-                _LOGGER.debug(f"Sensor {self.entity_id} state updated to {value}")
+                #_LOGGER.debug(f"Sensor {self.entity_id} state updated to {value}")
                 self.async_write_ha_state()
+
+    async def async_will_remove_from_hass(self):
+        """Unsubscribe from events when removed."""
+        _LOGGER.debug(f"Sensor {self.entity_id} will be removed from hass")
+        self.hass.bus._async_remove_listener(f"{DOMAIN}_sensor_updated", self._handle_event)
 
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""

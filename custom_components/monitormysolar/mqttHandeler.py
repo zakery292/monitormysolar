@@ -61,7 +61,6 @@ class MQTTHandler:
             try:
                 response = json.loads(msg.payload)
                 if response.get("status") == "success":
-                    entity._state = value
                     _LOGGER.info(f"Successfully updated state of {entity.entity_id} to {value}")
                 else:
                     _LOGGER.error(f"Failed to update state of {entity.entity_id} to {value}, reverting state.")
@@ -77,7 +76,7 @@ class MQTTHandler:
         await async_publish(self.hass, topic, payload)
 
         try:
-            await asyncio.wait_for(self.response_received_event.wait(), timeout=5)
+            await asyncio.wait_for(self.response_received_event.wait(), timeout=10)
             _LOGGER.debug(f"Response received or timeout for {entity.entity_id} at {datetime.now()}")
         except asyncio.TimeoutError:
             _LOGGER.error(f"No response received for {entity.entity_id} within the timeout period.")

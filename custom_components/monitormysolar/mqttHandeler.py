@@ -49,7 +49,7 @@ class MQTTHandler:
         modified_dongle_id[1] = modified_dongle_id[1].upper()
         modified_dongle_id = "-".join(modified_dongle_id)
 
-        topic = f"{modified_dongle_id}/ha/update"
+        topic = f"{modified_dongle_id}/update"
         payload = json.dumps({unique_id: value})
         _LOGGER.info(f"Sending MQTT update: {topic} - {payload} at {datetime.now()}")
         await mqtt.async_publish(self.hass, topic, payload)

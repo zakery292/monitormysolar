@@ -80,7 +80,7 @@ class FirmwareUpdateButton(ButtonEntity):
         if sw_version < latest_firmware_version:
             # Firmware update is needed
             _LOGGER.info(f"Firmware update button pressed for {formatted_dongle_id}")
-            await self._mqtt_handler.send_update(self._dongle_id, "firmware_update", "updatedongle", self)
+            await self.hass.data[DOMAIN]["mqtt_handler"].send_update(self._dongle_id, "firmware_update", "updatedongle", self)
         else:
             # No update needed
             _LOGGER.info(f"No firmware update needed for {formatted_dongle_id}. SW_VERSION: {sw_version}, LatestFirmwareVersion: {latest_firmware_version}")
@@ -92,8 +92,3 @@ class FirmwareUpdateButton(ButtonEntity):
         """Unsubscribe from events when removed."""
         _LOGGER.debug(f"Button {self.entity_id} will be removed from hass")
         self.hass.bus.async_remove_listener(f"{DOMAIN}_button_updated", self._handle_event)
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-        _LOGGER.debug(f"Button {self.entity_id} added to hass")
-        self.hass.bus.async_listen(f"{DOMAIN}_button_updated", self._handle_event)
-        _LOGGER.debug(f"Button {self.entity_id} subscribed to event")

@@ -78,7 +78,7 @@ class InverterTime(TimeEntity):
                 _LOGGER.debug(f"Skipping MQTT update for {self.entity_id} due to rate limiting")
                 return
 
-            _LOGGER.debug(f"Setting time value for {self.entity_id} to {value}")
+            _LOGGER.info(f"Setting time value for {self.entity_id} to {value}")
             await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
                 self._dongle_id.replace("_", "-"),
                 self.entity_info["unique_id"],

@@ -70,7 +70,7 @@ class InverterSwitch(SwitchEntity):
             self._previous_state = self._state  # Save the current state before changing
             self._state = True  # Optimistically update the state in HA
             self.async_write_ha_state()  # Update HA state immediately
-
+            _LOGGER.info(f"Setting Switch on value for {self.entity_id}")
             await mqtt_handler.send_update(
                 self._dongle_id, self.entity_info["unique_id"], 1, self
             )
@@ -84,7 +84,7 @@ class InverterSwitch(SwitchEntity):
             self._previous_state = self._state  # Save the current state before changing
             self._state = False  # Optimistically update the state in HA
             self.async_write_ha_state()  # Update HA state immediately
-
+            _LOGGER.info(f"Setting Switch off value for {self.entity_id}")
             await mqtt_handler.send_update(
                 self._dongle_id, self.entity_info["unique_id"], 0, self
             )

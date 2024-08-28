@@ -1,14 +1,14 @@
 {
-    "domain": "monitormysolar",
-    "name": "MonitorMySolar",
-    "codeowners": ["@zakery292"],
-    "config_flow": true,
-    "dependencies": ["mqtt"],
-    "documentation": "https://github.com/zakery292/monitormysolar",
-    "integration_type": "device",
-    "iot_class": "local_polling",    
-    "issue_tracker": "https://github.com/zakery292/monitormysolar/issues",
-    "loggers": [],
-    "requirements": ["MQTT", "paho-mqtt"],    
-    "version": "1.1.0"
-  }
+  "domain": "monitormysolar",
+  "name": "MonitorMySolar",
+  "codeowners": ["@zakery292"],
+  "config_flow": true,
+  "dependencies": ["mqtt"],
+  "documentation": "https://github.com/zakery292/monitormysolar",
+  "integration_type": "device",
+  "iot_class": "local_polling",    
+  "issue_tracker": "https://github.com/zakery292/monitormysolar/issues",
+  "loggers": [],
+  "requirements": ["MQTT"],    
+  "version": "1.1.1"
+}

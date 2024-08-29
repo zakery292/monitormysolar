@@ -19,8 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         dongle_id = config.get("dongle_id")
         firmware_code = config.get("firmware_code")
 
-
-                # Initialize the MQTT handler and store it in the hass data under the domain
+        # Initialize the MQTT handler and store it in the hass data under the domain
         mqtt_handler = MQTTHandler(hass)
         hass.data.setdefault(DOMAIN, {})["mqtt_handler"] = mqtt_handler
 
@@ -28,6 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         if not brand_entities:
             _LOGGER.error(f"No entities defined for inverter brand: {inverter_brand}")
             return False
+
         # Initialize the DOMAIN key in hass.data if it doesn't exist
         if DOMAIN not in hass.data:
             hass.data[DOMAIN] = {}
@@ -36,7 +36,6 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             if msg.topic == f"{dongle_id}/firmwarecode/response":
                 _LOGGER.debug("Received firmware code response")
                 try:
-                    # Directly load the payload as it's already a string
                     data = json.loads(msg.payload)
                     firmware_code = data.get("FWCode")
                     if firmware_code:
@@ -52,6 +51,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                         _LOGGER.error("No firmware code found in response")
                 except json.JSONDecodeError:
                     _LOGGER.error("Failed to decode JSON from response")
+            elif msg.topic == f"{dongle_id}/response":
+                await mqtt_handler.response_received(msg)
             else:
                 await process_message(hass, msg.payload, dongle_id, inverter_brand)
 

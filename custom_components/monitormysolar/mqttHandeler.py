@@ -23,22 +23,24 @@ class MQTTHandler:
 
     async def send_update(self, dongle_id, unique_id, value, entity):
         now = datetime.now()
+        _LOGGER.info(f"Sending update for {entity.entity_id} with value {value}")
 
         # Rate limiting logic: only allow one update per 10 seconds per entity
-        if self.last_time_update and (now - self.last_time_update).total_seconds() < 10:
-            _LOGGER.warning(f"Rate limit hit for {entity.entity_id}. Dropping update.")
+        if self.last_time_update and (now - self.last_time_update).total_seconds() < 5:
+            _LOGGER.info(f"Rate limit hit for {entity.entity_id}. Dropping update.")
             return
 
         async with self._lock:  # Ensure only one command is processed at a time
             if self._processing:
-                _LOGGER.warning(f"Already processing an update for {entity.entity_id}.")
+                _LOGGER.info(f"Already processing an update for {entity.entity_id}.")
                 return
 
             self._processing = True
             self.last_time_update = now
 
             try:
-                await self._process_command(dongle_id, unique_id, value, entity)
+                success = await self._process_command(dongle_id, unique_id, value, entity)
+                return success
             finally:
                 # Clear variables after processing the command
                 self._processing = False
@@ -56,34 +58,33 @@ class MQTTHandler:
 
         self.response_received_event.clear()  # Reset the event before sending the update
 
-        def response_received(msg):
-            _LOGGER.info(f"Received response for topic {msg.topic} at {datetime.now()}: {msg.payload}")
-            try:
-                response = json.loads(msg.payload)
-                if response.get("status") == "success":
-                    _LOGGER.info(f"Successfully updated state of {entity.entity_id} to {value}")
-                else:
-                    _LOGGER.error(f"Failed to update state of {entity.entity_id} to {value}, reverting state.")
-                    self.hass.loop.call_soon_threadsafe(entity.revert_state)
-            except json.JSONDecodeError:
-                _LOGGER.error(f"Failed to decode JSON response: {msg.payload}")
-                self.hass.loop.call_soon_threadsafe(entity.revert_state)
-            finally:
-                self.response_received_event.set()
-
         response_topic = f"{modified_dongle_id}/response"
-        await mqtt.async_subscribe(self.hass, response_topic, response_received)
-        await async_publish(self.hass, topic, payload)
+        await mqtt.async_subscribe(self.hass, response_topic, self.response_received)
 
         try:
-            await asyncio.wait_for(self.response_received_event.wait(), timeout=10)
+            await asyncio.wait_for(self.response_received_event.wait(), timeout=15)
             _LOGGER.debug(f"Response received or timeout for {entity.entity_id} at {datetime.now()}")
+            return True
         except asyncio.TimeoutError:
             _LOGGER.error(f"No response received for {entity.entity_id} within the timeout period.")
             self.hass.loop.call_soon_threadsafe(entity.revert_state)
-        finally:
-            # Clear variables after processing
-            self._processing = False
-            self.response_received_event.clear()
-            _LOGGER.debug(f"Cleared processing flags for {entity.entity_id} at {datetime.now()}")
+            return False
 
+    async def response_received(self, msg):
+        _LOGGER.info(f"Received response for topic {msg.topic} at {datetime.now()}: {msg.payload}")
+        try:
+            response = json.loads(msg.payload)
+            if response.get("status") == "success":
+                _LOGGER.info(f"Successfully updated state of entity.")
+            else:
+                _LOGGER.error(f"Failed to update state, reverting state.")
+                self.hass.loop.call_soon_threadsafe(self._revert_state)
+        except json.JSONDecodeError:
+            _LOGGER.error(f"Failed to decode JSON response: {msg.payload}")
+            self.hass.loop.call_soon_threadsafe(self._revert_state)
+        finally:
+            self.response_received_event.set()
+
+    def _revert_state(self, entity):
+        """Revert the state of the entity in case of failure."""
+        entity.revert_state()

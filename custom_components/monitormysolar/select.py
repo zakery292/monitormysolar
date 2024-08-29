@@ -65,8 +65,10 @@ class InverterSelect(SelectEntity):
         """Update the select option."""
         _LOGGER.info(f"Setting select option for {self.entity_id} to {option}")
         self._state = option
-        # Schedule state update on the main thread
-        self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
+        self.async_write_ha_state
+
+
+
         bit_value = self._options.index(option)
         await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
             self._dongle_id.replace("_", "-"),

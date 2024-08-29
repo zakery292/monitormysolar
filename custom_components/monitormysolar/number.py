@@ -95,6 +95,7 @@ class InverterNumber(NumberEntity):
             self._previous_value = self._value
             # Set the new value
             self._value = value
+            self.async_write_ha_state()
 
             # Send the update via MQTT
             await mqtt_handler.send_update(

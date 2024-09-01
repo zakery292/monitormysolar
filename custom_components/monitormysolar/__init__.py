@@ -53,6 +53,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     _LOGGER.error("Failed to decode JSON from response")
             elif msg.topic == f"{dongle_id}/response":
                 await mqtt_handler.response_received(msg)
+            elif msg.topic == f"{dongle_id}/status":
+                await process_status_message(hass, msg.payload, dongle_id)
             else:
                 await process_message(hass, msg.payload, dongle_id, inverter_brand)
 
@@ -132,6 +134,22 @@ async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
             _LOGGER.error(f"Error setting up {platform} entities: {e}")
             return False  # Return False if there's an error in setting up a platform
     return True  # Return True if all platforms are set up successfully
+
+
+async def process_status_message(hass, payload, dongle_id):
+    """Process incoming status MQTT message and update the status sensor."""
+    try:
+        data = json.loads(payload)
+    except ValueError:
+        _LOGGER.error("Invalid JSON payload received for status message")
+        return
+
+    formatted_dongle_id = dongle_id.replace(":", "_").lower()
+    entity_id = f"sensor.{formatted_dongle_id}_uptime"
+    _LOGGER.debug(f"Firing event for status sensor {entity_id} with payload {data}")
+    hass.bus.async_fire(f"{DOMAIN}_uptime_sensor_updated", {"entity": entity_id, "value": data})
+    _LOGGER.debug(f"Event fired for status sensor {entity_id}")
+
 
 async def process_message(hass, payload, dongle_id, inverter_brand):
     """Process incoming MQTT message and update entity states."""

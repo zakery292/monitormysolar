@@ -9,6 +9,8 @@ from homeassistant.const import (
     UnitOfFrequency,
     UnitOfPower,
     UnitOfTemperature,
+    UnitOfApparentPower,
+    UnitOfTime,
 )
 
 from homeassistant.components.sensor import (
@@ -127,77 +129,87 @@ DEFAULT_MQTT_PASSWORD = ""
 ENTITIES = {
         "Lux": {
             "sensor": {
+                "status": [
+                    {"name": "Uptime Sensor", "type": "sensor", "unique_id": "uptime", "attributes":["status", "freeheap", "minfreeheap", "stackusage", "HA_State_MQTT", "Web_State_MQTT", "Web_Error", "HA_Error"] }
+                ],
+                "powerflow": [
+                    {"name": "Grid Flow Live", "type": "sensor", "unique_id": "gridflow_live", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.POWER, "unit_of_measurement": UnitOfPower.WATT, "attribute1": "ptogrid", "attribute2": "ptouser"},
+                    {"name": "Battery Flow Live", "type": "sensor", "unique_id": "batteryflow_live", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.POWER, "unit_of_measurement": UnitOfPower.WATT, "attribute1": "pdischarge", "attribute2": "pcharge"},
+
+                ],
+                "combined": [
+                    #{"name": "Power PV All", "type": "sensor", "unique_id": "powerpv_all", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.POWER, "unit_of_measurement": UnitOfPower.WATT, "attributes": ["ppv1", "ppv2", "ppv3"] },
+                ],
                 "inputbank1": [
                     {"name": "Dongle Version", "type": "sensor", "unique_id": "SW_VERSION", "state_class": "text"},
                     {"name": "Latest Dongle Version", "type": "sensor", "unique_id": "latestFirmwareVersion", "state_class": "text"},
-                    {"name": "House Consumption (Live)", "type": "sensor", "unique_id": "pload", "state_class": "measurement", "device_class": "power", "unit_of_measurement": "UnitOfPower.WATT" },
+                    {"name": "House Consumption (Live)", "type": "sensor", "unique_id": "pload", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.POWER, "unit_of_measurement": UnitOfPower.WATT },
                     {"name": "State", "type": "sensor", "unique_id": "state"},
-                    {"name": "Voltage PV1", "type": "sensor", "unique_id": "vpv1", "unit_of_measurement": "V", "device_class": "voltage"},
-                    {"name": "Voltage PV2", "type": "sensor", "unique_id": "vpv2", "unit_of_measurement": "V", "state_class": "measurement", "device_class": "voltage"},
-                    {"name": "Voltage PV3", "type": "sensor", "unique_id": "vpv3", "unit_of_measurement": "V", "state_class": "measurement", "device_class": "voltage", "allowed_device_types": ["E", "F", "G"]},
-                    
-                    {"name": "Voltage Battery", "type": "sensor", "unique_id": "vbat", "unit_of_measurement": "V", "state_class": "measurement", "device_class": "voltage"},
-                    {"name": "State of Charge", "type": "sensor", "unique_id": "soc", "state_class": "measurement", "unit": "%", "device_class": "energy_storage"},
-                    {"name": "State of Health", "type": "sensor", "unique_id": "soh", "state_class": "measurement", "unit": "%"},
-                    {"name": "Internal Fault", "type": "sensor", "unique_id": "internal_fault", "state_class": "measurement"},
-                    {"name": "Power PV1", "type": "sensor", "unique_id": "ppv1", "state_class": "measurement", "unit": "W", "device_class": "power"},
-                    {"name": "Power PV2", "type": "sensor", "unique_id": "ppv2", "state_class": "measurement", "unit": "W", "device_class": "power"},
-                    {"name": "Power PV3", "type": "sensor", "unique_id": "ppv3", "state_class": "measurement", "unit": "W", "allowed_device_types": ["E", "F", "G"]},
-                    {"name": "Power PV All", "type": "sensor", "unique_id": "Pall", "state_class": "measurement", "unit": "W", "device_class": "power"},
-                    {"name": "Power Charge", "type": "sensor", "unique_id": "pcharge", "state_class": "measurement", "unit": "W", "device_class": "power"},
-                    {"name": "Power Discharge", "type": "sensor", "unique_id": "pdischarge", "state_class": "measurement", "unit": "W", "device_class": "power"},
-                    {"name": "Voltage AC R", "type": "sensor", "unique_id": "vacr", "state_class": "measurement", "unit": "V", "device_class": "voltage"},
-                    {"name": "Voltage AC S", "type": "sensor", "unique_id": "vacs", "state_class": "measurement", "unit": "V", "device_class": "voltage", "allowed_device_types": ["G"]},
-                    {"name": "Voltage AC T", "type": "sensor", "unique_id": "vact", "state_class": "measurement", "unit": "V", "device_class": "voltage", "allowed_device_types": ["G"]},
-                    {"name": "Frequency AC", "type": "sensor", "unique_id": "fac", "state_class": "measurement", "unit": "Hz"},
-                    {"name": "Power Inverter", "type": "sensor", "unique_id": "pinv", "state_class": "measurement", "unit": "W", "device_class": "power"},
-                    {"name": "Power Rectifier", "type": "sensor", "unique_id": "prec", "state_class": "measurement", "unit": "W", "device_class": "power"},
-                    {"name": "Current Inverter RMS", "type": "sensor", "unique_id": "iinvrms", "state_class": "measurement", "unit": "A", "device_class": "current"},
-                    {"name": "Power Factor", "type": "sensor", "unique_id": "pf", "state_class": "measurement", "device_class": "power_factor"},
-                    {"name": "Voltage EPS R", "type": "sensor", "unique_id": "vepsr", "state_class": "measurement", "unit": "V", "device_class": "voltage"},
-                    {"name": "Voltage EPS S", "type": "sensor", "unique_id": "vepss", "state_class": "measurement", "unit": "V", "device_class": "voltage", "allowed_device_types": ["G"]},
-                    {"name": "Voltage EPS T", "type": "sensor", "unique_id": "vepst", "state_class": "measurement", "unit": "V", "device_class": "voltage", "allowed_device_types": ["G"]},
-                    {"name": "Frequency EPS", "type": "sensor", "unique_id": "feps", "state_class": "measurement", "unit": "Hz", "device_class": "frequency"},
-                    {"name": "Power EPS", "type": "sensor", "unique_id": "peps", "state_class": "measurement", "unit": "W", "device_class": "power"},
-                    {"name": "Apparent Power EPS", "type": "sensor", "unique_id": "seps", "state_class": "measurement", "unit": "VA", "device_class": "apperent_power"},
-                    {"name": "Power to Grid (live)", "type": "sensor", "unique_id": "ptogrid", "state_class": "measurement", "unit": "W", "device_class": "power"},
-                    {"name": "Power to User(live)", "type": "sensor", "unique_id": "ptouser", "state_class": "measurement", "unit": "W", "device_class": "power"},
-                    {"name": "Energy PV1 Day", "type": "sensor", "unique_id": "epv1_day", "state_class": "total_increasing", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy PV2 Day", "type": "sensor", "unique_id": "epv2_day", "state_class": "total_increasing", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy PV3 Day", "type": "sensor", "unique_id": "epv3_day", "state_class": "total_increasing", "unit": "kWh", "device_class": "energy", "allowed_device_types": ["E", "F", "G"]},
-                    {"name": "Energy Inverter Day", "type": "sensor", "unique_id": "einv_day", "state_class": "total_increasing", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy Rectifier Day", "type": "sensor", "unique_id": "erec_day", "state_class": "total_increasing", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy Charge Day", "type": "sensor", "unique_id": "echg_day", "state_class": "total_increasing", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy Discharge Day", "type": "sensor", "unique_id": "edischg_day", "state_class": "total_increasing", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy EPS Day", "type": "sensor", "unique_id": "eeps_day", "state_class": "total_increasing", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy to Grid Day", "type": "sensor", "unique_id": "etogrid_day", "state_class": "total_increasing", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy to User Day", "type": "sensor", "unique_id": "etouser_day", "state_class": "total_increasing", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Voltage Bus 1", "type": "sensor", "unique_id": "vbus1", "state_class": "measurement", "unit": "V"},
-                    {"name": "Voltage Bus 2", "type": "sensor", "unique_id": "vbus2", "state_class": "measurement", "unit": "V"},
+                    {"name": "Voltage PV1", "type": "sensor", "unique_id": "vpv1", "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "Voltage PV2", "type": "sensor", "unique_id": "vpv2", "unit_of_measurement": UnitOfElectricPotential.VOLT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "Voltage PV3", "type": "sensor", "unique_id": "vpv3", "unit_of_measurement": UnitOfElectricPotential.VOLT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.VOLTAGE, "allowed_device_types": ["E", "F", "G"]},
+                    {"name": "Voltage Battery", "type": "sensor", "unique_id": "vbat", "unit_of_measurement": UnitOfElectricPotential.VOLT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "State of Charge", "type": "sensor", "unique_id": "soc", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": PERCENTAGE, "device_class": SensorDeviceClass.BATTERY},
+                    {"name": "State of Health", "type": "sensor", "unique_id": "soh", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": PERCENTAGE, "device_class": SensorDeviceClass.BATTERY},
+                    {"name": "Internal Fault", "type": "sensor", "unique_id": "internal_fault", "state_class": SensorStateClass.MEASUREMENT},
+                    {"name": "Power PV1", "type": "sensor", "unique_id": "ppv1", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER},
+                    {"name": "Power PV2", "type": "sensor", "unique_id": "ppv2", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER},
+                    {"name": "Power PV3", "type": "sensor", "unique_id": "ppv3", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "allowed_device_types": ["E", "F", "G"]},
+                    {"name": "Power PV All", "type": "sensor", "unique_id": "Pall", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER},
+                    {"name": "Power Charge", "type": "sensor", "unique_id": "pcharge", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER},
+                    {"name": "Power Discharge", "type": "sensor", "unique_id": "pdischarge", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER},
+                    {"name": "Voltage AC R", "type": "sensor", "unique_id": "vacr", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "Voltage AC S", "type": "sensor", "unique_id": "vacs", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE, "allowed_device_types": ["G"]},
+                    {"name": "Voltage AC T", "type": "sensor", "unique_id": "vact", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE, "allowed_device_types": ["G"]},
+                    {"name": "Frequency AC", "type": "sensor", "unique_id": "fac", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfFrequency.HERTZ, "device_class": SensorDeviceClass.FREQUENCY},
+                    {"name": "Power Inverter", "type": "sensor", "unique_id": "pinv", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER},
+                    {"name": "Power Rectifier", "type": "sensor", "unique_id": "prec", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER},
+                    {"name": "Current Inverter RMS", "type": "sensor", "unique_id": "iinvrms", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricCurrent.AMPERE, "device_class": SensorDeviceClass.CURRENT},
+                    {"name": "Power Factor", "type": "sensor", "unique_id": "pf", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.POWER_FACTOR, "unit_of_measurement": PERCENTAGE},
+                    {"name": "Voltage EPS R", "type": "sensor", "unique_id": "vepsr", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "Voltage EPS S", "type": "sensor", "unique_id": "vepss", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE, "allowed_device_types": ["G"]},
+                    {"name": "Voltage EPS T", "type": "sensor", "unique_id": "vepst", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE, "allowed_device_types": ["G"]},
+                    {"name": "Frequency EPS", "type": "sensor", "unique_id": "feps", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfFrequency.HERTZ, "device_class": SensorDeviceClass.FREQUENCY},
+                    {"name": "Power EPS", "type": "sensor", "unique_id": "peps", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER},
+                    {"name": "Apparent Power EPS", "type": "sensor", "unique_id": "seps", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfApparentPower.VOLT_AMPERE , "device_class": SensorDeviceClass.APPARENT_POWER},
+                    {"name": "Power to Grid (live)", "type": "sensor", "unique_id": "ptogrid", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER},
+                    {"name": "Power to User(live)", "type": "sensor", "unique_id": "ptouser", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER},
+                    {"name": "Energy PV1 Day", "type": "sensor", "unique_id": "epv1_day", "state_class": SensorStateClass.TOTAL_INCREASING, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy PV2 Day", "type": "sensor", "unique_id": "epv2_day", "state_class": SensorStateClass.TOTAL_INCREASING, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy PV3 Day", "type": "sensor", "unique_id": "epv3_day", "state_class": SensorStateClass.TOTAL_INCREASING, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY, "allowed_device_types": ["E", "F", "G"]},
+                    {"name": "Energy Inverter Day", "type": "sensor", "unique_id": "einv_day", "state_class": SensorStateClass.TOTAL_INCREASING, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy Rectifier Day", "type": "sensor", "unique_id": "erec_day", "state_class": SensorStateClass.TOTAL_INCREASING,"unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy Charge Day", "type": "sensor", "unique_id": "echg_day", "state_class": SensorStateClass.TOTAL_INCREASING, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy Discharge Day", "type": "sensor", "unique_id": "edischg_day", "state_class": SensorStateClass.TOTAL_INCREASING, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy EPS Day", "type": "sensor", "unique_id": "eeps_day", "state_class": SensorStateClass.TOTAL_INCREASING, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy to Grid Day", "type": "sensor", "unique_id": "etogrid_day", "state_class": SensorStateClass.TOTAL_INCREASING, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy to User Day", "type": "sensor", "unique_id": "etouser_day", "state_class": SensorStateClass.TOTAL_INCREASING, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Voltage Bus 1", "type": "sensor", "unique_id": "vbus1", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "Voltage Bus 2", "type": "sensor", "unique_id": "vbus2", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
                 ],
                 "inputbank2": [
-                    {"name": "Energy PV1 All", "type": "sensor", "unique_id": "epv1_all", "state_class": "total", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy PV2 All", "type": "sensor", "unique_id": "epv2_all", "state_class": "total", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy PV3 All", "type": "sensor", "unique_id": "epv3_all", "state_class": "total", "unit": "kWh", "device_class": "energy", "allowed_device_types": ["E", "F", "G"]},
-                    {"name": "Energy Inverter All", "type": "sensor", "unique_id": "einv_all", "state_class": "total", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy Rectifier All", "type": "sensor", "unique_id": "erec_all", "state_class": "total", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy Charge All", "type": "sensor", "unique_id": "echg_all", "state_class": "total", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy Discharge All", "type": "sensor", "unique_id": "edischg_all", "state_class": "total", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy EPS All", "type": "sensor", "unique_id": "eeps_all", "state_class": "total", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy to Grid All", "type": "sensor", "unique_id": "etogrid_all", "state_class": "total", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Energy to User All", "type": "sensor", "unique_id": "etouser_all", "state_class": "total", "unit": "kWh", "device_class": "energy"},
-                    {"name": "Fault Code", "type": "sensor", "unique_id": "fault_code", "state_class": "text"},
-                    {"name": "Warning Code", "type": "sensor", "unique_id": "warning_code", "state_class": "text"},
-                    {"name": "Internal Temperature", "type": "sensor", "unique_id": "tinner", "state_class": "measurement", "unit": "°C", "device_class": "temperature"},
-                    {"name": "Radiator Temperature 1", "type": "sensor", "unique_id": "tradiator1", "state_class": "measurement", "unit": "°C", "device_class": "temperature"},
-                    {"name": "Radiator Temperature 2", "type": "sensor", "unique_id": "tradiator2", "state_class": "measurement", "unit": "°C", "device_class": "temperature", "allowed_device_types": ["E", "F", "G"]},
-                    {"name": "Battery Temperature", "type": "sensor", "unique_id": "tbat", "state_class": "total", "unit": "°C", "device_class": "temperature"},
-                    {"name": "Running Time", "type": "sensor", "unique_id": "running_time", "state_class": "total", "unit": "s"},
-                    {"name": "Auto Test Limit", "type": "sensor", "unique_id": "wAutoTestLimit", "state_class": "measurement"},
-                    {"name": "Auto Test Default Time", "type": "sensor", "unique_id": "uwAutoTestDefaultTime", "state_class": "measurement"},
-                    {"name": "Auto Test Trip Value", "type": "sensor", "unique_id": "uwAutoTestTripValue", "state_class": "measurement"},
-                    {"name": "Auto Test Trip Time", "type": "sensor", "unique_id": "uwAutoTestTripTime", "state_class": "measurement"},
-                    {"name": "AC Input Type", "type": "sensor", "unique_id": "ACInputType", "state_class": "measurement"},
+                    {"name": "Energy PV1 All", "type": "sensor", "unique_id": "epv1_all", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy PV2 All", "type": "sensor", "unique_id": "epv2_all", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy PV3 All", "type": "sensor", "unique_id": "epv3_all", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY, "allowed_device_types": ["E", "F", "G"]},
+                    {"name": "Energy Inverter All", "type": "sensor", "unique_id": "einv_all", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy Rectifier All", "type": "sensor", "unique_id": "erec_all", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy Charge All", "type": "sensor", "unique_id": "echg_all", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy Discharge All", "type": "sensor", "unique_id": "edischg_all", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy EPS All", "type": "sensor", "unique_id": "eeps_all", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy to Grid All", "type": "sensor", "unique_id": "etogrid_all", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Energy to User All", "type": "sensor", "unique_id": "etouser_all", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY},
+                    {"name": "Fault Code", "type": "sensor", "unique_id": "FaultCode", "state_class": "text"},
+                    {"name": "Warning Code", "type": "sensor", "unique_id": "WarningCode", "state_class": "text"},
+                    {"name": "Internal Temperature", "type": "sensor", "unique_id": "tinner", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE},
+                    {"name": "Radiator Temperature 1", "type": "sensor", "unique_id": "tradiator1", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE},
+                    {"name": "Radiator Temperature 2", "type": "sensor", "unique_id": "tradiator2", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE, "allowed_device_types": ["E", "F", "G"]},
+                    {"name": "Battery Temperature", "type": "sensor", "unique_id": "tbat", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE},
+                    {"name": "Running Time", "type": "sensor", "unique_id": "RunningTime", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfTime.SECONDS, "device_class": SensorDeviceClass.DURATION},
+                    {"name": "Auto Test Limit", "type": "sensor", "unique_id": "wAutoTestLimit", "state_class": SensorStateClass.MEASUREMENT},
+                    {"name": "Auto Test Default Time", "type": "sensor", "unique_id": "uwAutoTestDefaultTime", "state_class": SensorStateClass.MEASUREMENT},
+                    {"name": "Auto Test Trip Value", "type": "sensor", "unique_id": "uwAutoTestTripValue", "state_class": SensorStateClass.MEASUREMENT},
+                    {"name": "Auto Test Trip Time", "type": "sensor", "unique_id": "uwAutoTestTripTime", "state_class": SensorStateClass.MEASUREMENT},
+                    {"name": "AC Input Type", "type": "sensor", "unique_id": "ACInputType", "state_class": SensorStateClass.MEASUREMENT},
                 ],
                 "holdbank1" : [
                     {"name": "FWCode", "type": "sensor", "unique_id": "FWCode", "state_class": "text"},
@@ -205,7 +217,6 @@ ENTITIES = {
                     {"name": "Com Version", "type": "sensor", "unique_id": "ComVer", "state_class": "text"},
                     {"name": "Control Version", "type": "sensor", "unique_id": "CntlVer", "state_class": "text"},
                     {"name": "FW Version", "type": "sensor", "unique_id": "FWVer", "state_class": "text"},
-                    {"name": "Date Time", "type": "sensor", "unique_id": "time_Date_combined", "state_class": "text"},
 
                 ]
             },
@@ -320,12 +331,7 @@ ENTITIES = {
                     {"name": "Dongle Firmware Update", "type": "button", "unique_id": "firmware_update_button"}
                 ]
             },
-
-            "time": {
-                "holdbank1": [
-                    {"name": "Date Combined", "type": "datetime", "unique_id": "time_date_combined", "native_value": "datetime", "icon": "mdi:calendar-clock"},
-
-                ],
+            "timee": { 
                 "holdbank2": [
                     {"name": "AC Charge Start", "type": "time", "unique_id": "ACChgStart"},
                     {"name": "AC Charge End", "type": "time", "unique_id": "ACChgEnd"},
@@ -353,8 +359,8 @@ ENTITIES = {
 
         "Solis": {
             "sensors": [
-                {"name": "Energy", "type": "sensor", "unique_id": "energy", "state_class": "measurement", "unit": "kWh"},
-                {"name": "Temperature", "type": "sensor", "unique_id": "temperature", "state_class": "measurement", "unit": "°C"},
+                {"name": "Energy", "type": "sensor", "unique_id": "energy", "state_class": SensorStateClass.MEASUREMENT, "unit": "kWh"},
+                {"name": "Temperature", "type": "sensor", "unique_id": "temperature", "state_class": SensorStateClass.MEASUREMENT, "unit": "°C"},
             ],
             "numbers": [
                 {"name": "Setpoint", "type": "number", "unique_id": "setpoint", "unit": "°C"},
@@ -362,7 +368,7 @@ ENTITIES = {
         },
         "Solax": {
             "sensors": [
-                {"name": "Battery Level", "type": "sensor", "unique_id": "battery_level", "state_class": "measurement", "unit": "%"},
+                {"name": "Battery Level", "type": "sensor", "unique_id": "battery_level", "state_class": SensorStateClass.MEASUREMENT, "unit": "%"},
             ],
             "switches": [
                 {"name": "Inverter Status", "type": "switch", "unique_id": "inverter_status"},
@@ -370,7 +376,7 @@ ENTITIES = {
         },
         "Growatt": {
             "sensors": [
-                {"name": "Output Power", "type": "sensor", "unique_id": "output_power", "state_class": "measurement", "unit": "W"},
+                {"name": "Output Power", "type": "sensor", "unique_id": "output_power", "state_class": SensorStateClass.MEASUREMENT, "unit": "W"},
             ],
             "times": [
                 {"name": "AC Charge Start1", "type": "time", "unique_id": "ac_charge_start1"},

@@ -11,6 +11,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
     firmware_code = entry.data.get("firmware_code")
     device_type = FIRMWARE_CODES.get(firmware_code, {}).get("Device_Type", "")
+    entity_info = entry.data.get("entity_info", {})
 
     brand_entities = ENTITIES.get(inverter_brand, {})
     buttons_config = brand_entities.get("button", {})
@@ -21,9 +22,16 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for bank_name, buttons in buttons_config.items():
         for button in buttons:
             try:
-                entities.append(
-                    FirmwareUpdateButton(button, hass, entry, dongle_id, bank_name, mqtt_handler)
-                )
+                if bank_name == "inputbank1": 
+                    entities.append(
+                        FirmwareUpdateButton(button, hass, entry, dongle_id, bank_name, mqtt_handler)
+                    )
+                elif bank_name == "restart":
+                    entities.append(
+                        RestartButton(button, hass, entry, dongle_id, bank_name, mqtt_handler)
+                    )
+
+                
             except Exception as e:
                 _LOGGER.error(f"Error setting up button {button}: {e}")
 
@@ -128,11 +136,11 @@ class RestartButton(ButtonEntity):
 
     async def async_press(self):
 
-
+        value = "1"
         await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
                 self._dongle_id.replace("_", "-"),
                 self.entity_info["unique_id"],
-                value.isoformat(),
+                value,
                 self,
             )
 

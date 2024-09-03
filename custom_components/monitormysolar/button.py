@@ -92,3 +92,51 @@ class FirmwareUpdateButton(ButtonEntity):
         """Unsubscribe from events when removed."""
         _LOGGER.debug(f"Button {self.entity_id} will be removed from hass")
         self.hass.bus.async_remove_listener(f"{DOMAIN}_button_updated", self._handle_event)
+
+
+class RestartButton(ButtonEntity):
+    def __init__(self, button_info, hass, entry, dongle_id, bank_name, mqtt_handler, entity_info):
+        """Initialize the button."""
+        self.button_info = button_info
+        self._name = button_info["name"]
+        self._unique_id = f"{entry.entry_id}_{button_info['unique_id']}".lower()
+        self._dongle_id = dongle_id.lower().replace("-", "_")
+        self._device_id = dongle_id.lower().replace("-", "_")
+        self._button_type = button_info["unique_id"]
+        self._entity_type = entity_info["unique_id"]
+        self._bank_name = bank_name
+        self.entity_id = f"button.{self._device_id}_{self._button_type.lower()}"
+        self.hass = hass
+        self._manufacturer = entry.data.get("inverter_brand")
+        self._mqtt_handler = mqtt_handler
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._dongle_id)},
+            "name": f"Inverter {self._dongle_id}",
+            "manufacturer": f"{self._manufacturer}",
+        }
+
+    async def async_press(self):
+
+
+        await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
+                self._dongle_id.replace("_", "-"),
+                self.entity_info["unique_id"],
+                value.isoformat(),
+                self,
+            )
+
+    async def async_will_remove_from_hass(self):
+        """Unsubscribe from events when removed."""
+        _LOGGER.debug(f"Button {self.entity_id} will be removed from hass")
+        self.hass.bus.async_remove_listener(f"{DOMAIN}_button_updated", self._handle_event)

@@ -1,5 +1,7 @@
-Reload integration:
+reload_integration:
+  name: "Reload integration"
+  description: "Reloading the integration."
   fields:
-    Reload integration:
-      name: Reload integration
-      description: Reloading the integration.
+    dummy_field:
+      name: "Dummy Field"
+      description: "A placeholder field for reloading the integration."

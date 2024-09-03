@@ -211,6 +211,39 @@ ENTITIES = {
                     {"name": "Auto Test Trip Time", "type": "sensor", "unique_id": "uwAutoTestTripTime", "state_class": SensorStateClass.MEASUREMENT},
                     {"name": "AC Input Type", "type": "sensor", "unique_id": "ACInputType", "state_class": SensorStateClass.MEASUREMENT},
                 ],
+                "inputbank3" : [ 
+                    {"name": "Battery Max Charge Current", "type": "sensor", "unique_id": "MaxChgCurr", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricCurrent.AMPERE, "device_class": SensorDeviceClass.CURRENT},
+                    {"name": "Battery Max Discharge Current", "type": "sensor", "unique_id": "MaxDischgCurr", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricCurrent.AMPERE, "device_class": SensorDeviceClass.CURRENT},
+                    {"name": "Battery Charge Voltage Ref", "type": "sensor", "unique_id": "ChargeVoltRef", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "Battery Discharge Voltage Ref", "type": "sensor", "unique_id": "DischgCutVolt", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "Battery BMS Status 0", "type": "sensor", "unique_id": "BMSBatStatus0_BMS"},
+                    {"name": "Battery BMS Status 5", "type": "sensor", "unique_id": "BatStatus5_BMS", },
+                    {"name": "Battery Status Aggregrate Value", "type": "sensor", "unique_id": "BatStatus_INV"},
+                    {"name": "Number Of Batteries (Parallel)", "type": "sensor", "unique_id": "BatParallelNum", "state_class": SensorStateClass.TOTAL},
+                    {"name": "Battery Capacity (Ah)", "type": "sensor", "unique_id": "BatCapacity", "state_class": SensorStateClass.TOTAL},
+                    {"name": "Battery Current", "type": "sensor", "unique_id": "BatCurrent_BMS", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricCurrent.AMPERE, "device_class": SensorDeviceClass.CURRENT},
+                    {"name": "Battery Fault Code", "type": "sensor", "unique_id": "FaultCode_BMS", "state_class": "text"},
+                    {"name": "Battery Warning Code", "type": "sensor", "unique_id": "WarningCode_BMS", "state_class": "text"},
+                    {"name": "Max Cell Voltage", "type": "sensor", "unique_id": "MaxCellVolt_BMS", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "Min Cell Voltage", "type": "sensor", "unique_id": "MinCellVolt_BMS", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "Max Cell Temperature", "type": "sensor", "unique_id": "MaxCellTemp_BMS", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE},
+                    {"name": "Min Cell Temperature", "type": "sensor", "unique_id": "MinCellTemp_BMS", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE},
+                    {"name": "Battery Cycle Count", "type": "sensor", "unique_id": "CycleCnt_BMS", "state_class": SensorStateClass.TOTAL},
+                    {"name": "Inverter Battery Voltage Sample", "type": "sensor", "unique_id": "BatVoltSample_INV", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
+                    {"name": "Radiator T1", "type": "sensor", "unique_id": "T1", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE, "allowed_device_types": ["F"]},
+                    {"name": "Radiator T2", "type": "sensor", "unique_id": "T2", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE, "allowed_device_types": ["F"]},
+                    {"name": "Radiator T3", "type": "sensor", "unique_id": "T3", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE, "allowed_device_types": ["F"]},
+                    {"name": "Radiator T4", "type": "sensor", "unique_id": "T4", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE, "allowed_device_types": ["F"]},
+                    {"name": "Mater or Slave Device", "type": "sensor", "unique_id": "MasterOrSlave", "state_class": "text"},
+
+
+
+
+
+
+
+
+                ],
                 "holdbank1" : [
                     {"name": "FWCode", "type": "sensor", "unique_id": "FWCode", "state_class": "text"},
                     {"name": "Slave Version", "type": "sensor", "unique_id": "SlaveVer", "state_class": "text"},
@@ -328,9 +361,13 @@ ENTITIES = {
             },
             "button": {
                 "inputbank1": [
-                    {"name": "Dongle Firmware Update", "type": "button", "unique_id": "firmware_update_button"}
-                ]
+                    {"name": "Dongle Firmware Update", "type": "button", "unique_id": "firmware_update_button"},
+                ],
+                "restart": [
+                    {"name": "Restart Inverter", "type": "button", "unique_id": "INVReboot"},
+                ],
             },
+
             "timee": { 
                 "holdbank2": [
                     {"name": "AC Charge Start", "type": "time", "unique_id": "ACChgStart"},

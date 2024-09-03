@@ -1,4 +1,5 @@
-fields:
-  Reload integration:
-    name: Reload integration
-    description: Reloading the integration.
+Reload integration:
+  fields:
+    Reload integration:
+      name: Reload integration
+      description: Reloading the integration.

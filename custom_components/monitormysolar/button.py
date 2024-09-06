@@ -103,7 +103,7 @@ class FirmwareUpdateButton(ButtonEntity):
 
 
 class RestartButton(ButtonEntity):
-    def __init__(self, button_info, hass, entry, dongle_id, bank_name, mqtt_handler, entity_info):
+    def __init__(self, button_info, hass, entry, dongle_id, bank_name, mqtt_handler):
         """Initialize the button."""
         self.button_info = button_info
         self._name = button_info["name"]

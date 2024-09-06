@@ -369,7 +369,7 @@ ENTITIES = {
                 ],
             },
 
-            "timee": { 
+            "time": { 
                 "holdbank2": [
                     {"name": "AC Charge Start", "type": "time", "unique_id": "ACChgStart"},
                     {"name": "AC Charge End", "type": "time", "unique_id": "ACChgEnd"},

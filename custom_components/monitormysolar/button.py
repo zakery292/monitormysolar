@@ -111,7 +111,6 @@ class RestartButton(ButtonEntity):
         self._dongle_id = dongle_id.lower().replace("-", "_")
         self._device_id = dongle_id.lower().replace("-", "_")
         self._button_type = button_info["unique_id"]
-        self._entity_type = entity_info["unique_id"]
         self._bank_name = bank_name
         self.entity_id = f"button.{self._device_id}_{self._button_type.lower()}"
         self.hass = hass
@@ -139,7 +138,7 @@ class RestartButton(ButtonEntity):
         value = "1"
         await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
                 self._dongle_id.replace("_", "-"),
-                self.entity_info["unique_id"],
+                self._button_type["unique_id"],
                 value,
                 self,
             )

@@ -52,7 +52,14 @@ class MQTTHandler:
         modified_dongle_id = "-".join(modified_dongle_id)
 
         topic = f"{modified_dongle_id}/update"
-        payload = json.dumps({unique_id: value})
+        
+        # Updated payload with setting, value, and from: homeassistant
+        payload = json.dumps({
+            "setting": unique_id, 
+            "value": value, 
+            "from": "homeassistant"
+        })
+        
         _LOGGER.info(f"Sending MQTT update: {topic} - {payload} at {datetime.now()}")
         await mqtt.async_publish(self.hass, topic, payload)
 
@@ -74,7 +81,9 @@ class MQTTHandler:
         _LOGGER.info(f"Received response for topic {msg.topic} at {datetime.now()}: {msg.payload}")
         try:
             response = json.loads(msg.payload)
-            if response.get("status") == "success":
+            
+            # Check if 'payload' and 'status' exist in the response
+            if 'payload' in response and response['payload'].get('status') == 'success':
                 _LOGGER.info(f"Successfully updated state of entity.")
             else:
                 _LOGGER.error(f"Failed to update state, reverting state.")
@@ -84,6 +93,7 @@ class MQTTHandler:
             self.hass.loop.call_soon_threadsafe(self._revert_state)
         finally:
             self.response_received_event.set()
+
 
     def _revert_state(self, entity):
         """Revert the state of the entity in case of failure."""

@@ -144,12 +144,19 @@ async def process_status_message(hass, payload, dongle_id):
         _LOGGER.error("Invalid JSON payload received for status message")
         return
 
+    # Check if the message follows the new structure with 'Serialnumber' and 'payload'
+    if "Serialnumber" in data and "payload" in data:
+        serial_number = data["Serialnumber"]
+        status_data = data["payload"]
+    else:
+        serial_number = None  # For backward compatibility
+        status_data = data  # Old format
+
     formatted_dongle_id = dongle_id.replace(":", "_").lower()
     entity_id = f"sensor.{formatted_dongle_id}_uptime"
-    _LOGGER.debug(f"Firing event for status sensor {entity_id} with payload {data}")
-    hass.bus.async_fire(f"{DOMAIN}_uptime_sensor_updated", {"entity": entity_id, "value": data})
+    _LOGGER.debug(f"Firing event for status sensor {entity_id} with payload {status_data}")
+    hass.bus.async_fire(f"{DOMAIN}_uptime_sensor_updated", {"entity": entity_id, "value": status_data})
     _LOGGER.debug(f"Event fired for status sensor {entity_id}")
-
 
 async def process_message(hass, payload, dongle_id, inverter_brand):
     """Process incoming MQTT message and update entity states."""
@@ -159,15 +166,24 @@ async def process_message(hass, payload, dongle_id, inverter_brand):
         _LOGGER.error("Invalid JSON payload received")
         return
 
+    # Check if the message follows the new structure with 'Serialnumber' and 'payload'
+    if "Serialnumber" in data and "payload" in data:
+        serial_number = data["Serialnumber"]
+        payload_data = data["payload"]
+    else:
+        serial_number = None  # For backward compatibility, handle without serial number
+        payload_data = data  # Old format
+
     formatted_dongle_id = dongle_id.replace(":", "_").lower()
 
-    for entity_id_suffix, state in data.items():
+    for entity_id_suffix, state in payload_data.items():
         formatted_entity_id_suffix = entity_id_suffix.lower().replace("-", "_").replace(":", "_")
         entity_type = determine_entity_type(formatted_entity_id_suffix, inverter_brand)
         entity_id = f"{entity_type}.{formatted_dongle_id}_{formatted_entity_id_suffix}"
         _LOGGER.debug(f"Firing event for entity {entity_id} with state {state}")
         hass.bus.async_fire(f"{DOMAIN}_{entity_type}_updated", {"entity": entity_id, "value": state})
         _LOGGER.debug(f"Event fired for entity {entity_id} with state {state}")
+
 
 def determine_entity_type(entity_id_suffix, inverter_brand):
     """Determine the entity type based on the entity_id_suffix."""

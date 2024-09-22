@@ -17,6 +17,7 @@ class MQTTHandler:
         self.response_received_event = asyncio.Event()
         self._processing = False  # To track if a command is currently being processed
         self._lock = asyncio.Lock()  # A lock to ensure only one command is processed at a time
+        self.current_entity = None  # Store the current entity
 
     async def async_setup(self, entry):
         self.hass.data[DOMAIN]["mqtt_handler"] = self
@@ -25,8 +26,8 @@ class MQTTHandler:
         now = datetime.now()
         _LOGGER.info(f"Sending update for {entity.entity_id} with value {value}")
 
-        # Rate limiting logic: only allow one update per 10 seconds per entity
-        if self.last_time_update and (now - self.last_time_update).total_seconds() < 5:
+        # Rate limiting logic: only allow one update per 1 second per entity
+        if self.last_time_update and (now - self.last_time_update).total_seconds() < 1:
             _LOGGER.info(f"Rate limit hit for {entity.entity_id}. Dropping update.")
             return
 
@@ -37,6 +38,7 @@ class MQTTHandler:
 
             self._processing = True
             self.last_time_update = now
+            self.current_entity = entity  # Store the entity to be used later in the response handling
 
             try:
                 success = await self._process_command(dongle_id, unique_id, value, entity)
@@ -45,6 +47,7 @@ class MQTTHandler:
                 # Clear variables after processing the command
                 self._processing = False
                 self.response_received_event.clear()
+                self.current_entity = None  # Clear entity after processing
 
     async def _process_command(self, dongle_id, unique_id, value, entity):
         modified_dongle_id = dongle_id.replace("_", "-").split("-")
@@ -66,6 +69,7 @@ class MQTTHandler:
         self.response_received_event.clear()  # Reset the event before sending the update
 
         response_topic = f"{modified_dongle_id}/response"
+        # Pass only the message, since we now have access to the entity via `self.current_entity`
         await mqtt.async_subscribe(self.hass, response_topic, self.response_received)
 
         try:
@@ -78,23 +82,25 @@ class MQTTHandler:
             return False
 
     async def response_received(self, msg):
+        """Handle the response received message."""
+        entity = self.current_entity  # Retrieve the stored entity
         _LOGGER.info(f"Received response for topic {msg.topic} at {datetime.now()}: {msg.payload}")
         try:
             response = json.loads(msg.payload)
             
-            # Check if 'payload' and 'status' exist in the response
-            if 'payload' in response and response['payload'].get('status') == 'success':
-                _LOGGER.info(f"Successfully updated state of entity.")
+            # Check if 'status' exists in the response and if it's 'success'
+            if response.get('status') == 'success':
+                _LOGGER.info(f"Successfully updated state of entity {entity.entity_id}.")
             else:
-                _LOGGER.error(f"Failed to update state, reverting state.")
-                self.hass.loop.call_soon_threadsafe(self._revert_state)
+                _LOGGER.error(f"Failed to update state for {entity.entity_id}, reverting state.")
+                self.hass.loop.call_soon_threadsafe(self._revert_state, entity)
         except json.JSONDecodeError:
-            _LOGGER.error(f"Failed to decode JSON response: {msg.payload}")
-            self.hass.loop.call_soon_threadsafe(self._revert_state)
+            _LOGGER.error(f"Failed to decode JSON response for {entity.entity_id}: {msg.payload}")
+            self.hass.loop.call_soon_threadsafe(self._revert_state, entity)
         finally:
             self.response_received_event.set()
 
-
     def _revert_state(self, entity):
         """Revert the state of the entity in case of failure."""
+        _LOGGER.info(f"Reverting state of entity {entity.entity_id}.")
         entity.revert_state()

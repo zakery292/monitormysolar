@@ -70,6 +70,7 @@ class InverterSelect(SelectEntity):
 
 
         bit_value = self._options.index(option)
+        _LOGGER.info(f"Setting Select value for {self.entity_id} to {option}")
         await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
             self._dongle_id.replace("_", "-"),
             self.entity_info["unique_id"],
@@ -86,11 +87,11 @@ class InverterSelect(SelectEntity):
     @callback
     def _handle_event(self, event):
         """Handle the event."""
-       # _LOGGER.debug(f"Handling event for select {self.entity_id}: {event.data}")
+        _LOGGER.debug(f"Handling event for select {self.entity_id}: {event.data}")
         event_entity_id = event.data.get("entity").lower().replace("-", "_")
         if event_entity_id == self.entity_id:
             value = event.data.get("value")
-            #_LOGGER.debug(f"Received event for select {self.entity_id}: {value}")
+            _LOGGER.debug(f"Received event for select {self.entity_id}: {value}")
             if value is not None:
                 self._state = (
                     self._options[value]

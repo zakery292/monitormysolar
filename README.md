@@ -120,8 +120,8 @@ There is a bug in core that ive reported that when using 12 hour time the time e
     <img src="images/step2.3.png" alt="Dongle Config Page" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
 </p>
-
-- On the Dongle config page, click the box "Enable Local MQTT Server", fill out the MQTT Server Address as ```mqtt://<IP ADDRESS OF HOME ASSISTANT>:1883```, fill out the MQTT Server Username and MQTT Server Password with the credentials you set up in Home Assistant for Mosquitto (you can use your username and password although this is not recommended). Once done, click save. The dongle will restart. IF YOU DO NOT FOLLOW THIS STEP IT WILL NOT WORK AND YOU WILL NOT BE GIVEN ANY HELP. DONGLE SETUP FIRST BEFORE INTEGRATION SETUP.
+# IF YOU DO NOT FOLLOW THIS STEP IT WILL NOT WORK AND YOU WILL NOT BE GIVEN ANY HELP. DONGLE SETUP FIRST BEFORE INTEGRATION SETUP. YOU MUST SET THE MQTT SERVER AS LISTED BELOW INCLUDING THE PORT. 
+- On the Dongle config page, click the box "Enable Local MQTT Server", fill out the MQTT Server Address as ```mqtt://<IP ADDRESS OF HOME ASSISTANT>:1883```, fill out the MQTT Server Username and MQTT Server Password with the credentials you set up in Home Assistant for Mosquitto (you can use your username and password although this is not recommended). Once done, click save. The dongle will restart. 
 
 <p align="center">
   <a href="images/step2.4.png" target="_blank">

@@ -263,6 +263,7 @@ ENTITIES = {
                     {"name": "Micro Grid On", "type": "switch", "unique_id": "ubMicroGridEn"}, #"allowed_device_types": ["A", "B", "E", "F", "G"]},
                     {"name": "Battery Shared", "type": "switch", "unique_id": "ubBatShared"}, #"allowed_device_types": ["A", "B", "E", "F", "G"]},
                     {"name": "Charge Last", "type": "switch", "unique_id": "ubChgLastEn"}, #"allowed_device_types": ["A", "B", "E", "F", "G"]},
+                    {"name": "Take Load Together", "type": "switch", "unique_id": "TakeLoadTogether"},
                 ],
                 "holdbank4": [
                     {"name": "Half hour charge Switch", "type": "switch", "unique_id": "HalfHourACChrStartEn"},

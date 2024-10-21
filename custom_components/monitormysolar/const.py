@@ -288,8 +288,12 @@ ENTITIES = {
                     {"name": "Battery Charge Start Point (W)", "type": "number", "unique_id": "PtoUserStartchg", "unit": "W", "min": 1, "max": -50 , "mode": "slider", "native_unit": "W", "class": "POWER"},
                     {"name": "CT Offset (W)", "type": "number", "unique_id": "wCT_PowerOffset", "unit": "W", "min": 0, "max": 1000 , "mode": "slider", "native_unit": "W", "class": "POWER"},
                     {"name": "Export Power (%)", "type": "number", "unique_id": "MaxBackFlow", "unit": "W", "min": 0, "max": 200 , "mode": "slider", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": PERCENTAGE},
+                    {"name": "On-grid Discharge Cut-off SOC Limit", "type": "number", "unique_id": "EOD", "unit": "PERCENT", "min": 0, "max": 90, "mode": "slider"},
                 ],
-
+                "holdbank4": [
+                    {"name": "Off-grid Discharge Cut-off SOC Limit", "type": "number", "unique_id": "SOCLowLimitForESPSDischg", "unit": "PERCENT", "min": 0, "max": 90, "mode": "slider"},
+                ],
+                
             },
             "select": {
                 "holdbank3": [

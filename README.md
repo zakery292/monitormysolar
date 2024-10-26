@@ -4,6 +4,8 @@ This integration is designed to make adding your inverter to home assistant with
 for some brands not others (listed below) you can use our dongle to communicate with the manufacturers portal as well as our own and home assistant. 
  - Lux Power
 
+# CHECK THE ISSUES BEFORE CONTINUING ANY FURTHER THEY MAY BE ISSUES YOU NEED TO KNOW ABOUT PRIOR TO INSTALLATION.
+
 # What is this and what does it do? 
 This integration is as simple as it sounds, connect the dongle get all the entites and sensors your inverter has to offer with read and write capabilities. 
 
@@ -119,7 +121,10 @@ There is a bug in core that ive reported that when using 12 hour time the time e
   </a>
 </p>
 
-- On the Dongle config page, click the box "Enable Local MQTT Server", fill out the MQTT Server Address as ```mqtt://<IP ADDRESS OF HOME ASSISTANT>:1883```, fill out the MQTT Server Username and MQTT Server Password with the credentials you set up in Home Assistant for Mosquitto (you can use your username and password although this is not recommended). Once done, click save. The dongle will restart. IF YOU DO NOT FOLLOW THIS STEP IT WILL NOT WORK AND YOU WILL NOT BE GIVEN ANY HELP. DONGLE SETUP FIRST BEFORE INTEGRATION SETUP.
+## IF YOU DO NOT FOLLOW THIS STEP IT WILL NOT WORK AND YOU WILL NOT BE GIVEN ANY HELP. DONGLE SETUP FIRST BEFORE INTEGRATION SETUP. YOU MUST SET THE MQTT SERVER AS LISTED BELOW INCLUDING THE PORT. 
+
+- On the Dongle config page, click the box "Enable Local MQTT Server", fill out the MQTT Server Address as ```mqtt://<IP ADDRESS OF HOME ASSISTANT>:1883```, fill out the MQTT Server Username and MQTT Server Password with the credentials you set up in Home Assistant for Mosquitto (you can use your username and password although this is not recommended). Once done, click save. The dongle will restart.
+
 
 <p align="center">
   <a href="images/step2.4.png" target="_blank">
@@ -129,7 +134,7 @@ There is a bug in core that ive reported that when using 12 hour time the time e
 
 - Dongle ID is presented at the bottom of the config page for Home Assistant. You will need to change the capitalization of Dongle to lowercase dongle.
 - Once you have the Dongle-ID and you have set up the MQTT server on the dongle (you'll see connected on the webpage if it worked under Local MQTT Server), you can go back to Home Assistant and finish the integration setup.
-- For the integration, select the inverter you're setting up. If you're using the Mosquitto broker, then leave the server as default, port as default, and enter the username and password you set up in Home Assistant for Mosquitto. Enter the Dongle-ID from the dongle config page. Press submit.
+- For the integration, select the inverter you're setting up. Then add the dongleID the dongleID needs to be in all lowercase There is a bug on the dongle that presents the dongleID with a capital D this will be amended shortly.
 
 <p align="center">
   <a href="images/step2.5.png" target="_blank">

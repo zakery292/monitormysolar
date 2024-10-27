@@ -56,7 +56,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             elif msg.topic == f"{dongle_id}/status":
                 await process_status_message(hass, msg.payload, dongle_id)
             else:
-                await process_message(hass, msg.payload, dongle_id, inverter_brand)
+                await process_message(hass, msg.topic, msg.payload, dongle_id, inverter_brand)
+
 
         await mqtt.async_subscribe(hass, f"{dongle_id}/#", process_incoming_message)
 
@@ -99,6 +100,7 @@ async def async_unload_entry(hass, entry):
     try:
         unload_ok = await hass.config_entries.async_unload_platforms(entry, [
             Platform.SENSOR,
+            Platform.BINARY_SENSOR,
             Platform.SWITCH,
             Platform.NUMBER,
             Platform.TIME,
@@ -116,6 +118,7 @@ async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
     """Set up the entities based on the firmware code."""
     platforms = [
         Platform.SENSOR,
+        Platform.BINARY_SENSOR,
         Platform.SWITCH,
         Platform.NUMBER,
         Platform.TIME,
@@ -158,13 +161,20 @@ async def process_status_message(hass, payload, dongle_id):
     hass.bus.async_fire(f"{DOMAIN}_uptime_sensor_updated", {"entity": entity_id, "value": status_data})
     _LOGGER.debug(f"Event fired for status sensor {entity_id}")
 
-async def process_message(hass, payload, dongle_id, inverter_brand):
+async def process_message(hass, topic, payload, dongle_id, inverter_brand):
     """Process incoming MQTT message and update entity states."""
     try:
         data = json.loads(payload)
+        bank_name = topic.split('/')[-1]  # Gets 'inputbank1', 'holdbank2', etc.
+        # _LOGGER.debug(f"Bank name: {bank_name}")
+        # _LOGGER.debug(f"Topic: {topic}")
+        hass.bus.async_fire(f"{DOMAIN}_bank_updated", {"bank_name": bank_name})
+        _LOGGER.debug(f"Event fired for bank {bank_name}")
+        
     except ValueError:
         _LOGGER.error("Invalid JSON payload received")
         return
+    
 
     # Check if the message follows the new structure with 'Serialnumber' and 'payload'
     if "Serialnumber" in data and "payload" in data:

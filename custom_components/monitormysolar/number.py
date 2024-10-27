@@ -27,60 +27,24 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class InverterNumber(NumberEntity):
     def __init__(self, entity_info, hass, entry, dongle_id, bank_name):
         """Initialize the number."""
-        _LOGGER.debug(f"Initializing number with info: {entity_info}")
         self.entity_info = entity_info
-        self._name = entity_info["name"]
-        self._unique_id = f"{entry.entry_id}_{entity_info['unique_id']}".lower()
-        self._value = 0
+        self._attr_name = entity_info["name"]
+        self._attr_unique_id = f"{entry.entry_id}_{entity_info['unique_id']}".lower()
+        self._attr_native_value = 0
         self._dongle_id = dongle_id.lower().replace("-", "_")
         self._device_id = dongle_id.lower().replace("-", "_")
         self._entity_type = entity_info["unique_id"]
         self._bank_name = bank_name
         self.entity_id = f"number.{self._device_id}_{self._entity_type.lower()}"
         self.hass = hass
-        self._min_value = entity_info.get("min", None)
-        self._max_value = entity_info.get("max", None)
-        self._mode = entity_info.get("mode", "auto")
-        self._native_unit_of_measurement = entity_info.get("native_unit_of_measurement", None)
-        self._device_class = entity_info.get("device_class", None)
+        self._attr_native_min_value = entity_info.get("min", None)
+        self._attr_native_max_value = entity_info.get("max", None)
+        self._attr_mode = entity_info.get("mode", "auto")
+        self._attr_native_unit_of_measurement = entity_info.get("native_unit_of_measurement", None)
+        self._attr_device_class = entity_info.get("device_class", None)
         self._manufacturer = entry.data.get("inverter_brand")
-        self._previous_value = self._value  # Track the previous value for revert
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def unique_id(self):
-        return self._unique_id
-
-    @property
-    def native_value(self):
-        return self._value
-
-    @property
-    def min_value(self):
-        return self._min_value
-
-    @property
-    def max_value(self):
-        return self._max_value
-
-    @property
-    def mode(self):
-        return self._mode
-
-    @property
-    def native_unit_of_measurement(self):
-        return self._native_unit_of_measurement
-
-    @property
-    def device_class(self):
-        return self._device_class
-
-    @property
-    def device_info(self):
-        return {
+        self._previous_value = self._attr_native_value  # Track the previous value for revert
+        self._attr_device_info = {
             "identifiers": {(DOMAIN, self._dongle_id)},
             "name": f"Inverter {self._dongle_id}",
             "manufacturer": f"{self._manufacturer}",
@@ -92,9 +56,9 @@ class InverterNumber(NumberEntity):
         mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
         if mqtt_handler is not None:
             # Save the current value before changing
-            self._previous_value = self._value
+            self._previous_value = self._attr_native_value
             # Set the new value
-            self._value = value
+            self._attr_native_value = value
             self.async_write_ha_state()
 
             # Send the update via MQTT
@@ -110,22 +74,17 @@ class InverterNumber(NumberEntity):
     def revert_state(self):
         """Revert to the previous state."""
         _LOGGER.info(f"Reverting state for {self.entity_id} to {self._previous_value}")
-        self._value = self._previous_value
-        # Schedule state revert on the main thread
+        self._attr_native_value = self._previous_value
         self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     @callback
     def _handle_event(self, event):
         """Handle the event."""
-       #_LOGGER.debug(f"Handling event for number {self.entity_id}: {event.data}")
         event_entity_id = event.data.get("entity").lower().replace("-", "_")
         if event_entity_id == self.entity_id:
             value = event.data.get("value")
-            #_LOGGER.debug(f"Received event for number {self.entity_id}: {value}")
             if value is not None:
-                self._value = value
-                #_LOGGER.debug(f"Number {self.entity_id} value updated to {value}")
-                # Schedule state update on the main thread
+                self._attr_native_value = value
                 self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     async def async_added_to_hass(self):

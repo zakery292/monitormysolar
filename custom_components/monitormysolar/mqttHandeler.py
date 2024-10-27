@@ -104,3 +104,66 @@ class MQTTHandler:
         """Revert the state of the entity in case of failure."""
         _LOGGER.info(f"Reverting state of entity {entity.entity_id}.")
         entity.revert_state()
+    async def send_multiple_updates(self, dongle_id, payload_dict, entity):
+        """Handle multiple settings updates."""
+        now = datetime.now()
+        _LOGGER.info(f"Sending multiple updates for {entity.entity_id} with payload {payload_dict}")
+
+        if self.last_time_update and (now - self.last_time_update).total_seconds() < 1:
+            _LOGGER.info(f"Rate limit hit for {entity.entity_id}. Dropping update.")
+            return
+
+        async with self._lock:
+            if self._processing:
+                _LOGGER.info(f"Already processing an update for {entity.entity_id}.")
+                return
+
+            self._processing = True
+            self.last_time_update = now
+            self.current_entity = entity
+
+            try:
+                success = await self._process_multiple_commands(dongle_id, payload_dict, entity)
+                return success
+            finally:
+                self._processing = False
+                self.response_received_event.clear()
+                self.current_entity = None
+
+    async def _process_multiple_commands(self, dongle_id, payload_dict, entity):
+        """Process multiple commands in a single payload."""
+        modified_dongle_id = dongle_id.replace("_", "-").split("-")
+        modified_dongle_id[1] = modified_dongle_id[1].upper()
+        modified_dongle_id = "-".join(modified_dongle_id)
+
+        topic = f"{modified_dongle_id}/update"
+        
+        # Create payload with multiple settings
+        settings = []
+        for setting, value in payload_dict.items():
+            settings.append({
+                "setting": setting,
+                "value": value
+            })
+        
+        payload = json.dumps({
+            "settings": settings,
+            "from": "homeassistant"
+        })
+        
+        _LOGGER.info(f"Sending multiple MQTT updates: {topic} - {payload} at {datetime.now()}")
+        await mqtt.async_publish(self.hass, topic, payload)
+
+        self.response_received_event.clear()
+
+        response_topic = f"{modified_dongle_id}/response"
+        await mqtt.async_subscribe(self.hass, response_topic, self.response_received)
+
+        try:
+            await asyncio.wait_for(self.response_received_event.wait(), timeout=15)
+            _LOGGER.debug(f"Response received or timeout for {entity.entity_id} at {datetime.now()}")
+            return True
+        except asyncio.TimeoutError:
+            _LOGGER.error(f"No response received for {entity.entity_id} within the timeout period.")
+            self.hass.loop.call_soon_threadsafe(entity.revert_state)
+            return False

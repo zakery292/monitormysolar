@@ -15,7 +15,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
     for bank_name, selects in select_config.items():
         for select in selects:
             try:
-                entities.append(InverterSelect(select, hass, entry, dongle_id))
+                if bank_name == "holdbank6":
+                    entities.append(QuickChargeDurationSelect(select, hass, entry, dongle_id, bank_name))
+                else:
+                    entities.append(InverterSelect(select, hass, entry, dongle_id))
             except Exception as e:
                 _LOGGER.error(f"Error setting up select {select}: {e}")
 
@@ -111,3 +114,65 @@ class InverterSelect(SelectEntity):
        # _LOGGER.debug(f"Select {self.entity_id} added to hass")
         self.hass.bus.async_listen(f"{DOMAIN}_select_updated", self._handle_event)
         #_LOGGER.debug(f"Select {self.entity_id} subscribed to event")
+
+
+class QuickChargeDurationSelect(SelectEntity):
+    def __init__(self, entity_info, hass, entry, dongle_id, bank_name):
+        """Initialize the select entity."""
+        self.entity_info = entity_info
+        self._attr_name = entity_info["name"]
+        self._attr_unique_id = f"{entry.entry_id}_{entity_info['unique_id']}".lower()
+        self._attr_options = entity_info["options"]
+        self._attr_current_option = self._attr_options[0]  # Default to first option
+        self._dongle_id = dongle_id.lower().replace("-", "_")
+        self._entity_type = entity_info["unique_id"]
+        self.entity_id = f"select.{self._dongle_id}_{self._entity_type.lower()}"
+        self.hass = hass
+        self._manufacturer = entry.data.get("inverter_brand")
+        self._additional_payload = entity_info.get("additional_payload")
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option."""
+        mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
+        if mqtt_handler is not None:
+            # Prepare the payload dictionary
+            payload_dict = {
+                self._entity_type: option
+            }
+            
+            # Add additional payload if configured
+            if self._additional_payload:
+                value_map = self._additional_payload.get("value_map", {})
+                additional_value = value_map.get(option, value_map.get("default"))
+                if additional_value is not None:
+                    payload_dict[self._additional_payload["key"]] = additional_value
+
+            # Send the multiple updates via MQTT
+            await mqtt_handler.send_multiple_updates(
+                self._dongle_id.replace("_", "-"),
+                payload_dict,
+                self,
+            )
+            
+            self._attr_current_option = option
+            self.async_write_ha_state()
+        else:
+            _LOGGER.error("MQTT Handler is not initialized")
+
+    @callback
+    def _handle_event(self, event):
+        """Handle the event."""
+        event_entity_id = event.data.get("entity").lower().replace("-", "_")
+        if event_entity_id == self.entity_id:
+            value = event.data.get("value")
+            if value in self._attr_options:
+                self._attr_current_option = value
+                self.async_write_ha_state()
+
+    async def async_added_to_hass(self):
+        """Subscribe to events when added to hass."""
+        self.hass.bus.async_listen(f"{DOMAIN}_select_updated", self._handle_event)
+
+    async def async_will_remove_from_hass(self):
+        """Unsubscribe from events when removed."""
+        self.hass.bus._async_remove_listener(f"{DOMAIN}_select_updated", self._handle_event)

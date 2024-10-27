@@ -26,7 +26,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     inverter_brand = entry.data.get("inverter_brand")
     dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
     firmware_code = entry.data.get("firmware_code")
-    device_type = FIRMWARE_CODES.get(firmware_code, {}).get("Device_Type", "")
 
     brand_entities = ENTITIES.get(inverter_brand, {})
     sensors_config = brand_entities.get("sensor", {})
@@ -36,21 +35,21 @@ async def async_setup_entry(hass, entry, async_add_entities):
     # Loop through the sensors in the configuration
     for bank_name, sensors in sensors_config.items():
         for sensor in sensors:
-            allowed_device_types = sensor.get("allowed_device_types", [])
-            if not allowed_device_types or device_type in allowed_device_types:
+            allowed_firmware_codes = sensor.get("allowed_firmware_codes", [])
+            if not allowed_firmware_codes or firmware_code in allowed_firmware_codes:
                 try:
                     # Check if the sensor is of type 'status' to create the StatusSensor class
                     if bank_name == "status":
                         entities.append(
-                            StatusSensor(sensor, hass, entry, dongle_id, bank_name)
+                            StatusSensor(sensor, hass, entry, dongle_id, bank_name),
                         )
                     elif bank_name == "powerflow":
                         entities.append(
                             PowerFlowSensor(sensor, hass, entry, dongle_id, bank_name)
                         )
-                    elif bank_name == "combined":
+                    elif bank_name == "timestamp":
                         entities.append(
-                            CombinedSensor(sensor, hass, entry, dongle_id, bank_name)
+                            BankUpdateSensor(sensor, hass, entry, dongle_id, bank_name)
                         )
                     else:
                         entities.append(
@@ -406,3 +405,77 @@ class CombinedSensor(SensorEntity):
         _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
         self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
         _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")
+
+class BankUpdateSensor(SensorEntity):
+    def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
+        """Initialize the Bank Update sensor."""
+        self.sensor_info = sensor_info
+        self._name = sensor_info["name"]
+        self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}".lower()
+        self._state = None
+        self._dongle_id = dongle_id.lower().replace("-", "_")
+        self._device_id = dongle_id.lower().replace("-", "_")
+        self._sensor_type = sensor_info["unique_id"]
+        self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
+        self.hass = hass
+        self._manufacturer = entry.data.get("inverter_brand")
+        
+        # Initialize attributes with None values
+        self._attributes = {attr: None for attr in sensor_info.get("attributes", [])}
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def state(self):
+        """Return the most recent update time."""
+        return self._state
+
+    @property
+    def device_class(self):
+        return self.sensor_info.get("device_class")
+
+    @property
+    def extra_state_attributes(self):
+        return self._attributes
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._dongle_id)},
+            "name": f"Inverter {self._dongle_id}",
+            "manufacturer": f"{self._manufacturer}",
+        }
+
+    @callback
+    def _handle_bank_update(self, event):
+        """Handle bank update events."""
+        bank_name = event.data.get("bank_name")
+        _LOGGER.debug(f"Update Event Called for: {bank_name}")
+        if bank_name:
+            current_time = datetime.now().isoformat()
+            attr_name = f"{bank_name}_last_update"
+            _LOGGER.debug(f"Updating Attribute name: {attr_name}")
+            
+            if attr_name in self._attributes:
+                self._attributes[attr_name] = current_time
+                self._state = current_time  # Update state to most recent update
+                self.async_write_ha_state()
+
+    async def async_will_remove_from_hass(self):
+        """Unsubscribe from events when removed."""
+        _LOGGER.debug(f"Unsubscribing from bank update event for {self.entity_id}")
+        self.hass.bus._async_remove_listener(f"{DOMAIN}_bank_updated", self._handle_bank_update)
+
+    async def async_added_to_hass(self):
+        """Subscribe to events when added to hass."""
+        _LOGGER.debug(f"Subscribing to bank update event for {self.entity_id}")
+        self.hass.bus.async_listen(f"{DOMAIN}_bank_updated", self._handle_bank_update)
+
+
+        

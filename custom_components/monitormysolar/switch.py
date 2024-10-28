@@ -42,6 +42,7 @@ class InverterSwitch(SwitchEntity):
         self.entity_id = f"switch.{self._device_id}_{self._entity_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
+        self._previous_state = None
 
     @property
     def name(self):
@@ -67,13 +68,15 @@ class InverterSwitch(SwitchEntity):
         """Turn the switch on."""
         mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
         if mqtt_handler is not None:
-            self._previous_state = self._state  # Save the current state before changing
-            self._state = True  # Optimistically update the state in HA
-            self.async_write_ha_state()  # Update HA state immediately
+            self._previous_state = self._state
+            self._state = True  # Optimistically update the state
+            self.async_write_ha_state()
             _LOGGER.info(f"Setting Switch on value for {self.entity_id}")
-            await mqtt_handler.send_update(
+            success = await mqtt_handler.send_update(
                 self._dongle_id, self.entity_info["unique_id"], 1, self
             )
+            if not success:
+                self.revert_state()
         else:
             _LOGGER.error("MQTT Handler is not initialized")
 
@@ -85,17 +88,19 @@ class InverterSwitch(SwitchEntity):
             self._state = False  # Optimistically update the state in HA
             self.async_write_ha_state()  # Update HA state immediately
             _LOGGER.info(f"Setting Switch off value for {self.entity_id}")
-            await mqtt_handler.send_update(
+            success = await mqtt_handler.send_update(
                 self._dongle_id, self.entity_info["unique_id"], 0, self
             )
+            if not success:
+                self.revert_state()
         else:
             _LOGGER.error("MQTT Handler is not initialized")
 
     def revert_state(self):
         """Revert to the previous state."""
-        self._state = not self._state
-        # Schedule state revert on the main thread
-        self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
+        if self._previous_state is not None:
+            self._state = self._previous_state
+            self.async_write_ha_state()
 
     @callback
     def _handle_event(self, event):

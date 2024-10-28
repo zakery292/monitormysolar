@@ -18,6 +18,7 @@ class MQTTHandler:
         self._processing = False  # To track if a command is currently being processed
         self._lock = asyncio.Lock()  # A lock to ensure only one command is processed at a time
         self.current_entity = None  # Store the current entity
+        self._unsubscribe_response = None
 
     async def async_setup(self, entry):
         self.hass.data[DOMAIN]["mqtt_handler"] = self
@@ -68,9 +69,18 @@ class MQTTHandler:
 
         self.response_received_event.clear()  # Reset the event before sending the update
 
+        # Clean up any existing subscription
+        if self._unsubscribe_response:
+            self._unsubscribe_response()
+            self._unsubscribe_response = None
+
         response_topic = f"{modified_dongle_id}/response"
-        # Pass only the message, since we now have access to the entity via `self.current_entity`
-        await mqtt.async_subscribe(self.hass, response_topic, self.response_received)
+        # Create a single subscription and store the unsubscribe function
+        self._unsubscribe_response = await mqtt.async_subscribe(
+            self.hass, 
+            response_topic, 
+            self.response_received
+        )
 
         try:
             await asyncio.wait_for(self.response_received_event.wait(), timeout=15)
@@ -80,30 +90,44 @@ class MQTTHandler:
             _LOGGER.error(f"No response received for {entity.entity_id} within the timeout period.")
             self.hass.loop.call_soon_threadsafe(entity.revert_state)
             return False
+        finally:
+            # Unsubscribe from the response topic
+            if self._unsubscribe_response:
+                self._unsubscribe_response()
+                self._unsubscribe_response = None
+
+
 
     async def response_received(self, msg):
         """Handle the response received message."""
-        entity = self.current_entity  # Retrieve the stored entity
+        entity = self.current_entity
+        if not entity:
+            return
+
         _LOGGER.info(f"Received response for topic {msg.topic} at {datetime.now()}: {msg.payload}")
         try:
             response = json.loads(msg.payload)
             
-            # Check if 'status' exists in the response and if it's 'success'
             if response.get('status') == 'success':
                 _LOGGER.info(f"Successfully updated state of entity {entity.entity_id}.")
+                # Keep the current state as it was already optimistically updated
+                self.hass.loop.call_soon_threadsafe(entity.async_write_ha_state)
             else:
                 _LOGGER.error(f"Failed to update state for {entity.entity_id}, reverting state.")
-                self.hass.loop.call_soon_threadsafe(self._revert_state, entity)
+                self.hass.loop.call_soon_threadsafe(entity.revert_state)
         except json.JSONDecodeError:
             _LOGGER.error(f"Failed to decode JSON response for {entity.entity_id}: {msg.payload}")
-            self.hass.loop.call_soon_threadsafe(self._revert_state, entity)
+            self.hass.loop.call_soon_threadsafe(entity.revert_state)
         finally:
+            # Unsubscribe and clear the event
+            if self._unsubscribe_response:
+                self._unsubscribe_response()
+                self._unsubscribe_response = None
             self.response_received_event.set()
 
-    def _revert_state(self, entity):
-        """Revert the state of the entity in case of failure."""
-        _LOGGER.info(f"Reverting state of entity {entity.entity_id}.")
-        entity.revert_state()
+
+
+
     async def send_multiple_updates(self, dongle_id, payload_dict, entity):
         """Handle multiple settings updates."""
         now = datetime.now()

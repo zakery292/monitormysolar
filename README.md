@@ -50,16 +50,16 @@ There is a bug in core that ive reported that when using 12 hour time the time e
 - Head to HACS and (depending on when you're reading this, you might have to add it as a custom repository) click the three dots in the top right corner and select "Custom repositories".
 
 <p align="center">
-  <a href="images/step1.png" target="_blank">
-    <img src="images/step1.png" alt="Custom Repositories" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
+  <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step1.png" target="_blank">
+    <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step1.png" alt="Custom Repositories" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
 </p>
 
 - Copy the URL of this page and paste it into the "Repository URL" field and click "Add".
 
 <p align="center">
-  <a href="images/step1.1.png" target="_blank">
-    <img src="images/step1.1.png" alt="Add Repository URL" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
+  <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step1.1.png" target="_blank">
+    <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step1.1.png" alt="Add Repository URL" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
 </p>
 
@@ -68,13 +68,13 @@ There is a bug in core that ive reported that when using 12 hour time the time e
 <table align="center">
   <tr>
     <td>
-      <a href="images/step1.3.png" target="_blank">
-        <img src="images/step1.3.png" alt="HACS Integration Download" width="150" style="cursor:pointer;" title="Click to view full size" />
+      <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step1.3.png" target="_blank">
+        <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step1.3.png" alt="HACS Integration Download" width="150" style="cursor:pointer;" title="Click to view full size" />
       </a>
     </td>
     <td>
-      <a href="images/step1.4.png" target="_blank">
-        <img src="images/step1.4.png" alt="Download Integration" width="150" style="cursor:pointer;" title="Click to view full size" />
+      <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step1.4.png" target="_blank">
+        <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step1.4.png" alt="Download Integration" width="150" style="cursor:pointer;" title="Click to view full size" />
       </a>
     </td>
   </tr>
@@ -87,8 +87,8 @@ There is a bug in core that ive reported that when using 12 hour time the time e
 - Once downloaded, you will need to restart Home Assistant for the integration to be loaded.
 
 <p align="center">
-  <a href="images/step1.5.png" target="_blank">
-    <img src="images/step1.5.png" alt="Restart Home Assistant" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
+  <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step1.5.png" target="_blank">
+    <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step1.5.png" alt="Restart Home Assistant" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
 </p>
 
@@ -97,27 +97,27 @@ There is a bug in core that ive reported that when using 12 hour time the time e
 - Once Home Assistant has restarted, you will need to go to Settings -> Devices & Services -> Add Integration.
 
 <p align="center">
-  <a href="images/step2.png" target="_blank">
+  <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step2.png" target="_blank">
     <img src="images/step2.png" alt="Add Integration" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
-  <a href="images/step2.1.png" target="_blank">
-    <img src="images/step2.1.png" alt="Devices & Services" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
+  <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step2.1.png" target="_blank">
+    <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step2.1.png" alt="Devices & Services" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
 </p>
 
 - In the popup that appears, search for "Monitor My Solar" and click on the integration.
 
 <p align="center">
-  <a href="images/step2.2.png" target="_blank">
-    <img src="images/step2.2.png" alt="Search Integration" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
+  <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step2.2.png" target="_blank">
+    <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step2.2.png" alt="Search Integration" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
 </p>
 
 - Before going any further, you will need the "dongle-ID". You can find this on the webpage that the dongle provides when you connect directly to it. If you know the IP address of your dongle, you should be able to put that in your browser to get to the dongle config page. Once on the dongle config page, we need to set up the Home Assistant MQTT Server settings.
 
 <p align="center">
-  <a href="images/step2.3.png" target="_blank">
-    <img src="images/step2.3.png" alt="Dongle Config Page" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
+  <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step2.3.png" target="_blank">
+    <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step2.3.png" alt="Dongle Config Page" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
 </p>
 
@@ -127,8 +127,8 @@ There is a bug in core that ive reported that when using 12 hour time the time e
 
 
 <p align="center">
-  <a href="images/step2.4.png" target="_blank">
-    <img src="images/step2.4.png" alt="Enable Local MQTT Server" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
+  <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step2.4.png" target="_blank">
+    <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step2.4.png" alt="Enable Local MQTT Server" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
 </p>
 
@@ -137,8 +137,8 @@ There is a bug in core that ive reported that when using 12 hour time the time e
 - For the integration, select the inverter you're setting up. Then add the dongleID the dongleID needs to be in all lowercase There is a bug on the dongle that presents the dongleID with a capital D this will be amended shortly.
 
 <p align="center">
-  <a href="images/step2.5.png" target="_blank">
-    <img src="images/step2.5.png" alt="Finish Integration Setup" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
+  <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step2.5.png" target="_blank">
+    <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step2.5.png" alt="Finish Integration Setup" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
 </p>
 
@@ -147,8 +147,8 @@ There is a bug in core that ive reported that when using 12 hour time the time e
 - If you followed these instructions and did not deviate, then you will be presented with a popup like the below image.
 
 <p align="center">
-  <a href="images/step3.png" target="_blank">
-    <img src="images/step3.png" alt="Integration Popup" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
+  <a href="https://github.com/zakery292/monitormysolar/raw/main/images/step3.png" target="_blank">
+    <img src="https://github.com/zakery292/monitormysolar/raw/main/images/step3.png" alt="Integration Popup" width="150" style="display:inline-block; cursor:pointer;" title="Click to view full size" />
   </a>
 </p>
 

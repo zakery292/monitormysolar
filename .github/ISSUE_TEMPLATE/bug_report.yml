@@ -1,15 +1,14 @@
 name: Bug Report
-description: Report an issue with the dongle, Home Assistant, or web monitoring
+description: Report an issue with the dongle, Home Assistant, or web monitoring.
 title: "[BUG] Brief description of the issue"
-labels: [bug]
-assignees: ''
+labels: ["bug"]
 
 body:
   - type: dropdown
     id: component
     attributes:
-      label: Affected Component
-      description: Select the component related to your issue
+      label: "Affected Component"
+      description: "Select the component related to your issue."
       options:
         - Dongle
         - Home Assistant
@@ -19,27 +18,31 @@ body:
   - type: input
     id: version
     attributes:
-      label: Version Information
-      description: Enter the version of the integration, dongle firmware, or mark N/A if related to Web Monitoring
-      placeholder: "<Enter version here>"
+      label: "Version Information"
+      description: "Enter the version of the integration or dongle firmware. Type N/A if related to Web Monitoring."
+      placeholder: "Enter version here"
       required: true
 
-  - type: markdown
+  - type: textarea
+    id: images_videos
     attributes:
-      value: "**Media Attachments**\nAttach any images or videos showing the issue (if applicable)."
+      label: "Media Attachments"
+      description: "Provide links to any images or videos showing the issue, if applicable."
+      placeholder: "Paste links to images or videos here"
+      required: false
 
-  - type: input
+  - type: textarea
     id: mqtt_output
     attributes:
-      label: MQTT Output
-      description: If your issue is related to the Dongle, Home Assistant, or Web Monitoring, please provide the output from the MQTT topic `dongleID/status`
-      placeholder: "<Paste MQTT output here>"
+      label: "MQTT Output"
+      description: "If the issue relates to the Dongle, Home Assistant, or Web Monitoring, provide the MQTT output from `dongleID/status`."
+      placeholder: "Paste MQTT output here"
       required: false
 
   - type: textarea
     id: detailed_description
     attributes:
-      label: Detailed Description
-      description: Provide a detailed description of the issue, including steps to reproduce and expected behavior.
+      label: "Detailed Description"
+      description: "Provide a detailed description of the issue, including steps to reproduce and the expected behavior."
       placeholder: "Describe the issue in detail"
       required: true

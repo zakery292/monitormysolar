@@ -13,8 +13,8 @@ body:
         - Dongle
         - Home Assistant
         - Web Monitoring
-  validations:
-    required: true
+    validations:
+      required: true
 
   - type: input
     id: version
@@ -22,8 +22,8 @@ body:
       label: "Version Information"
       description: "Enter the version of the integration or dongle firmware. Type N/A if related to Web Monitoring."
       placeholder: "Enter version here"
-  validations:
-    required: true
+    validations:
+      required: true
 
   - type: textarea
     id: images_videos
@@ -31,8 +31,8 @@ body:
       label: "Media Attachments"
       description: "Provide links to any images or videos showing the issue, if applicable."
       placeholder: "Paste links to images or videos here"
-  validations:
-    required: true
+    validations:
+      required: true
 
   - type: textarea
     id: mqtt_output
@@ -40,8 +40,8 @@ body:
       label: "MQTT Output"
       description: "If the issue relates to the Dongle, Home Assistant, or Web Monitoring, provide the MQTT output from `dongleID/status`."
       placeholder: "Paste MQTT output here"
-  validations:
-    required: true
+    validations:
+      required: true
 
   - type: textarea
     id: detailed_description
@@ -49,5 +49,5 @@ body:
       label: "Detailed Description"
       description: "Provide a detailed description of the issue, including steps to reproduce and the expected behavior."
       placeholder: "Describe the issue in detail"
-  validations:
-    required: true
+    validations:
+      required: true

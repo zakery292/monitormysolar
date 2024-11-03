@@ -17,7 +17,7 @@ Before opening a new issue, **please check the existing issues** to see if your 
 
 ## 4. License Compliance
 
-By contributing to this repository, you agree that all code is subject to the terms of our [LICENSE](../LICENSE.md). Ensure that your contributions do not include unlicensed or incompatible code from third-party sources. Respect the license terms for any code, dependencies, or resources included in your contributions.
+By contributing to this repository, you agree that all code is subject to the terms of our [LICENSE](../LICENSE). Ensure that your contributions do not include unlicensed or incompatible code from third-party sources. Respect the license terms for any code, dependencies, or resources included in your contributions.
 
 ## 5. Constructive Feedback and Reviews
 

@@ -16,11 +16,11 @@ body:
   - type: dropdown
     id: entity_feature
     attributes:
-      label: "Is this a Entity?"
+      label: "Is this an Entity?"
       options:
         - "Yes"
         - "No"
-      default: "No"
+      default: 1  # Sets "No" as the default selection
     validations:
       required: true
 

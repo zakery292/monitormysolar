@@ -55,7 +55,7 @@ body:
   - type: checkboxes
     id: issue_check
     attributes:
-      label: Code of Conduct
+      label: Issues
       description: By Submitting this Issue you confirm you have checked to see if the issue already exists and your not duplicating the bug, if this is found to be the case this will be deleted 
       options:
         - label: I agree i have checked the Issues Tab to see if this already Exists

@@ -16,15 +16,13 @@ body:
   - type: dropdown
     id: entity_feature
     attributes:
-      label: Is this a Entity? 
+      label: "Is this a Entity?"
       options:
         - "Yes"
         - "No"
-        default: "No"
+      default: "No"
     validations:
       required: true
-        
-        
 
   - type: textarea
     id: feature_description
@@ -43,6 +41,7 @@ body:
       placeholder: "Enter Home Assistant version"
     validations:
       required: true
+
   - type: textarea
     id: additional_context
     attributes:
@@ -50,4 +49,4 @@ body:
       description: "Add any extra information or screenshots relevant to the feature request."
       placeholder: "Add any other details here"
     validations:
-      required: true
+      required: false

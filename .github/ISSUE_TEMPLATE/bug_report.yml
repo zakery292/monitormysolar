@@ -40,6 +40,7 @@ body:
       label: "MQTT Output"
       description: "If the issue relates to the Dongle, Home Assistant, or Web Monitoring, provide the MQTT output from `dongleID/status`."
       placeholder: "Paste MQTT output here"
+      render: shell
     validations:
       required: true
 
@@ -51,3 +52,19 @@ body:
       placeholder: "Describe the issue in detail"
     validations:
       required: true
+  - type: checkboxes
+    id: issue_check
+    attributes:
+      label: Code of Conduct
+      description: By Submitting this Issue you confirm you have checked to see if the issue already exists and your not duplicating the bug, if this is found to be the case this will be deleted 
+      options:
+        - label: I agree i have checked the Issues Tab to see if this already Exists
+          required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/zakery292/monitormysolar/blob/main/.github/CODE_OF_CONDUCT.md). 
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

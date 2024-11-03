@@ -10,17 +10,18 @@ body:
       label: "Feature Name"
       description: "Give a brief name for the feature you’re requesting."
       placeholder: "Enter feature name here"
-    validations:
-      required: true
+  validations:
+    required: true
     
   - type: dropdown
+    id: UI_Firmware
     attributes:
       label: UI Or Firmware Feature?
       options:
         - UI
         - Firmware
-      validations:
-        required: true
+  validations:
+    required: true
 
 
   - type: textarea
@@ -29,8 +30,8 @@ body:
       label: "Feature Description"
       description: "Provide a detailed description of the feature and how it would improve the dongle’s functionality."
       placeholder: "Describe the feature in detail"
-    validations:
-      required: true
+  validations:
+    required: true
 
   - type: textarea
     id: usage_scenarios
@@ -38,8 +39,8 @@ body:
       label: "Usage Scenarios"
       description: "Explain scenarios where this feature would be useful."
       placeholder: "List possible use cases"
-    validations:
-      required: true
+  validations:
+    required: true
 
   - type: input
     id: firmware_version
@@ -47,7 +48,7 @@ body:
       label: "Current Firmware Version"
       description: "Provide the current firmware version, if applicable."
       placeholder: "Enter firmware version"
-    validations:
-      required: true
+  validations:
+    required: true
 
 

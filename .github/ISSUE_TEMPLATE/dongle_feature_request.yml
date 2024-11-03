@@ -10,8 +10,9 @@ body:
       label: "Feature Name"
       description: "Give a brief name for the feature you’re requesting."
       placeholder: "Enter feature name here"
-    validations:
-      required: true
+  validations:
+    required: true
+  
   - type: dropdown
     attributes:
       label: UI Or Firmware Feature?

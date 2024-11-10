@@ -9,6 +9,7 @@
   "iot_class": "local_polling",    
   "issue_tracker": "https://github.com/zakery292/monitormysolar/issues",
   "loggers": [],
-  "requirements": ["MQTT"],    
-  "version": "1.2.3"
+  "requirements": ["MQTT", "aiohttp"],    
+  "version": "1.2.5"
 }
+

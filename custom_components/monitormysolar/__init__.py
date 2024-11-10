@@ -106,6 +106,7 @@ async def async_unload_entry(hass, entry):
             Platform.TIME,
             Platform.SELECT,
             Platform.BUTTON,
+            Platform.UPDATE,
         ])
         if unload_ok:
             hass.data.pop(DOMAIN)

@@ -62,7 +62,7 @@ FIRMWARE_CODES = {
             "C": "Others"
         }
     },
-    "C_6_12k_OffGrid" {
+    "C_6_12k_OffGrid": {
         "Device_Type": "C Standard Model",
         "Derived_Device_Type": {
             "A": "Standard Model",

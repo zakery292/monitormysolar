@@ -125,6 +125,7 @@ async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
         Platform.TIME,
         Platform.SELECT,
         Platform.BUTTON,
+        Platform.UPDATE,
     ]
 
     for platform in platforms:
@@ -167,33 +168,108 @@ async def process_message(hass, topic, payload, dongle_id, inverter_brand):
     try:
         data = json.loads(payload)
         bank_name = topic.split('/')[-1]  # Gets 'inputbank1', 'holdbank2', etc.
-        # _LOGGER.debug(f"Bank name: {bank_name}")
-        # _LOGGER.debug(f"Topic: {topic}")
         hass.bus.async_fire(f"{DOMAIN}_bank_updated", {"bank_name": bank_name})
         _LOGGER.debug(f"Event fired for bank {bank_name}")
         
     except ValueError:
         _LOGGER.error("Invalid JSON payload received")
         return
-    
 
-    # Check if the message follows the new structure with 'Serialnumber' and 'payload'
-    if "Serialnumber" in data and "payload" in data:
-        serial_number = data["Serialnumber"]
-        payload_data = data["payload"]
-    else:
-        serial_number = None  # For backward compatibility, handle without serial number
-        payload_data = data  # Old format
+    # Handle new payload structure while maintaining backward compatibility
+    serial_number = None
+    payload_data = {}
+    events_data = {}
+    fault_data = {}
+    warning_data = {}
+
+    if isinstance(data, dict):
+        if "Serialnumber" in data:
+            serial_number = data.get("Serialnumber")
+            
+        if "payload" in data:
+            # New format with data wrapper
+            payload_data = data["payload"]
+            events_data = data.get("events", {})
+            fault_data = data.get("fault", {})
+            warning_data = data.get("warning", {})
+            # **Add this block to extract and store versions**
+        else:
+            # Old format - direct key-value pairs
+            payload_data = data
+    if "SW_VERSION" in payload_data:
+        fw_version = payload_data["SW_VERSION"]
+        hass.data[DOMAIN]["current_fw_version"] = fw_version
+        _LOGGER.debug(f"Current firmware version set: {fw_version}")
+        # Fire event for update entity
+        entity_id = f"update.{dongle_id}_firmware_update"
+        hass.bus.async_fire(f"{DOMAIN}_update_version", {
+            "entity": entity_id,
+            "value": fw_version
+        })
+
+    # Update UI version
+    if "UI_VERSION" in payload_data:
+        ui_version = payload_data["UI_VERSION"]
+        hass.data[DOMAIN]["current_ui_version"] = ui_version
+        _LOGGER.debug(f"Current UI version set: {ui_version}")
+        # Fire event for update entity
+        entity_id = f"update.{dongle_id}_ui_update"
+        hass.bus.async_fire(f"{DOMAIN}_update_version", {
+            "entity": entity_id,
+            "value": ui_version
+        })
+
+
 
     formatted_dongle_id = dongle_id.replace(":", "_").lower()
 
+
+    # Process main sensor data
     for entity_id_suffix, state in payload_data.items():
+    # Skip if we've already handled version keys
         formatted_entity_id_suffix = entity_id_suffix.lower().replace("-", "_").replace(":", "_")
         entity_type = determine_entity_type(formatted_entity_id_suffix, inverter_brand)
         entity_id = f"{entity_type}.{formatted_dongle_id}_{formatted_entity_id_suffix}"
         _LOGGER.debug(f"Firing event for entity {entity_id} with state {state}")
         hass.bus.async_fire(f"{DOMAIN}_{entity_type}_updated", {"entity": entity_id, "value": state})
         _LOGGER.debug(f"Event fired for entity {entity_id} with state {state}")
+
+    # Process events data if present (new format)
+    if events_data:
+        _LOGGER.debug(f"Processing events data: {events_data}")
+        # Fire events for state updates
+        for event_id, event_state in events_data.items():
+            formatted_event_id = event_id.lower().replace("-", "_").replace(":", "_")
+            entity_id = f"binary_sensor.{formatted_dongle_id}_{formatted_event_id}"
+            hass.bus.async_fire(f"{DOMAIN}_binary_sensor_updated", {
+                "entity": entity_id, 
+                "value": event_state
+            })
+
+    # Process fault data if present (new format)
+    if fault_data:
+        _LOGGER.debug(f"Processing fault data: {fault_data}")
+        # Fire events for fault updates
+        for fault_id, fault_state in fault_data.items():
+            formatted_fault_id = fault_id.lower().replace("-", "_").replace(":", "_")
+            entity_id = f"binary_sensor.{formatted_dongle_id}_fault_{formatted_fault_id}"
+            hass.bus.async_fire(f"{DOMAIN}_binary_sensor_updated", {
+                "entity": entity_id, 
+                "value": fault_state
+            })
+
+    # Process warning data if present (new format)
+    if warning_data:
+        _LOGGER.debug(f"Processing warning data: {warning_data}")
+        # Fire events for warning updates
+        for warning_id, warning_state in warning_data.items():
+            formatted_warning_id = warning_id.lower().replace("-", "_").replace(":", "_")
+            entity_id = f"binary_sensor.{formatted_dongle_id}_warning_{formatted_warning_id}"
+            hass.bus.async_fire(f"{DOMAIN}_binary_sensor_updated", {
+                "entity": entity_id, 
+                "value": warning_state
+            })
+
 
 
 def determine_entity_type(entity_id_suffix, inverter_brand):

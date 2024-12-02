@@ -191,8 +191,6 @@ ENTITIES = {
 
                 ],
                 "inputbank1": [
-                    {"name": "Dongle Version", "type": "sensor", "unique_id": "SW_VERSION", "state_class": "text"},
-                    {"name": "Latest Dongle Version", "type": "sensor", "unique_id": "latestFirmwareVersion", "state_class": "text"},
                     {"name": "House Consumption (Live)", "type": "sensor", "unique_id": "pload", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.POWER, "unit_of_measurement": UnitOfPower.WATT },
                     {"name": "State", "type": "sensor", "unique_id": "state"},
                     {"name": "Voltage PV1", "type": "sensor", "unique_id": "vpv1", "unit_of_measurement": UnitOfElectricPotential.VOLT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.VOLTAGE, "allowed_firmware_codes": ["AAAA", "AAAB", "FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
@@ -497,6 +495,26 @@ ENTITIES = {
                     {"name": "Force Discharge End2", "type": "time", "unique_id": "ForcedDischgEnd2"},
                 ],
             },
+            "update": {
+                 "system": [
+                     {
+                         "name": "Dongle Firmware",
+                         "type": "update",
+                         "unique_id": "firmware_update",
+                         "version_key": "SW_VERSION",
+                         "latest_version_key": "latestFwVersion",
+                         "update_command": "update_firmware"
+                     },
+                     {
+                         "name": "Dongle UI",
+                         "type": "update",
+                         "unique_id": "ui_update",
+                         "version_key": "UI_VERSION",
+                         "latest_version_key": "latestUiVersion",
+                         "update_command": "update_ui"
+                     }
+                 ]
+             }
         },
 
         "Solis": {

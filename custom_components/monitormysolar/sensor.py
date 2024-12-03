@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import json
 from homeassistant.components.sensor import SensorEntity
@@ -656,11 +656,53 @@ class CalculatedSensor(SensorEntity):
         if self._operation == "division":
             numerator = self._sensor_values[self._source_sensors[0]]
             denominator = self._sensor_values[self._source_sensors[1]]
-            if denominator and denominator != 0:  # Avoid division by zero
+            if denominator and denominator != 0:
                 self._state = round(numerator / denominator, 2)
             else:
                 self._state = 0
-        # Add other operations as needed
+        
+        elif self._operation == "battery_time":
+            capacity_ah = self._sensor_values.get("batcapacity", 0)
+            voltage = self._sensor_values.get("vbat", 0)
+            load_watts = self._sensor_values.get("pload", 0)
+            battery_flow = self._sensor_values.get("batteryflow_live", 0)
+            soc = self._sensor_values.get("soc", 0)
+            pv_power = self._sensor_values.get("pall", 0)
+
+            if capacity_ah > 0 and voltage > 0 and soc > 0:
+                usable_energy_wh = (capacity_ah * voltage) * (soc / 100)
+                net_load = max(load_watts - pv_power, 0)
+                adjusted_load = net_load - battery_flow
+
+                if adjusted_load > 0:
+                    self._state = round(usable_energy_wh / adjusted_load, 2)
+                else:
+                    self._state = "Charging"
+
+                # Calculate attributes
+                self._attr_extra_state_attributes = {
+                    "calculated_kwh_storage_total": round(capacity_ah * voltage / 1000, 2),
+                    "calculated_kwh_left": round((capacity_ah * voltage * (soc / 100)) / 1000, 2),
+                }
+
+                # Calculate time battery empty
+                if adjusted_load > 0:
+                    hours_remaining = usable_energy_wh / adjusted_load
+                    current_time = datetime.now()
+                    empty_time = current_time + timedelta(hours=hours_remaining)
+                    
+                    self._attr_extra_state_attributes.update({
+                        "time_battery_empty": empty_time.strftime('%Y-%m-%d %H:%M:%S'),
+                        "human_readable_time_left": f"{int(hours_remaining)} hours, {int((hours_remaining - int(hours_remaining)) * 60)} minutes"
+                    })
+            else:
+                self._state = "Unavailable"
+                self._attr_extra_state_attributes = {
+                    "calculated_kwh_storage_total": "Unavailable",
+                    "calculated_kwh_left": "Unavailable",
+                    "time_battery_empty": "Unavailable",
+                    "human_readable_time_left": "Unavailable"
+                }
 
     @callback
     def _handle_event(self, event):

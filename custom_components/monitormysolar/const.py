@@ -98,7 +98,7 @@ FIRMWARE_CODES = {
             "C": "Others"
         }
     },
-    "F_12K_Hybrid": { # FAAB USA EG4 12k Model 
+    "F_12K_Hybrid": { # FAAB USA EG4 12k Model
         "Device_Type": "A Standard Model",
         "Derived_Device_Type": {
             "A": "Standard Model",
@@ -297,7 +297,7 @@ ENTITIES = {
                     {"name": "Radiator T4", "type": "sensor", "unique_id": "T4", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfTemperature.CELSIUS, "device_class": SensorDeviceClass.TEMPERATURE, "allowed_device_types": ["FAAB", "FAAA"]},
                     {"name": "On Grid Load Power", "type": "sensor", "unique_id": "OnGridLoadPower", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfPower.WATT, "device_class": SensorDeviceClass.POWER, "allowed_device_types": ["FAAA", "FAAB"]},
                     {"name": "Energy Of Generator Today", "type": "sensor", "unique_id": "Egen_day", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY, "allowed_device_types": ["FAAA", "FAAB"]},
-                    {"name": "Energy Of Generator All", "type": "sensor", "unique_id": "EgenAll", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY, "allowed_device_types": ["FAAA", "FAAB"]},
+                    {"name": "Energy Of Generator All", "type": "sensor", "unique_id": "Egen_All", "state_class": SensorStateClass.TOTAL, "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "device_class": SensorDeviceClass.ENERGY, "allowed_device_types": ["FAAA", "FAAB"]},
 
                     {"name": "Master or Slave Device", "type": "sensor", "unique_id": "MasterOrSlave", "state_class": "text"},
                 ],
@@ -308,10 +308,10 @@ ENTITIES = {
                     {"name": "Power EPS L2N", "type": "sensor", "unique_id": "Peps_L2N", "unit_of_measurement": UnitOfPower.WATT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.POWER, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
                     {"name": "Apperant Power L1N (va)", "type": "sensor", "unique_id": "Seps_L1N", "unit_of_measurement": UnitOfApparentPower.VOLT_AMPERE, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.APPARENT_POWER, "allowed_firmware_codes": ["FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
                     {"name": "Apperant Power L2N (va)", "type": "sensor", "unique_id": "Seps_L2N", "unit_of_measurement": UnitOfApparentPower.VOLT_AMPERE, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.APPARENT_POWER, "allowed_firmware_codes": ["FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
-                    {"name": "Energy EPS L1N Day", "type": "sensor", "unique_id": "Eeps_L1N_day", "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL, "device_class": SensorDeviceClass.ENERGY, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
-                    {"name": "Energy EPS L2N Day", "type": "sensor", "unique_id": "Eeps_L2N_day", "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL, "device_class": SensorDeviceClass.ENERGY, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
-                    {"name": "Energy EPS L1N All", "type": "sensor", "unique_id": "Eeps_L1N_all", "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL, "device_class": SensorDeviceClass.ENERGY, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
-                    {"name": "Energy EPS L2N All", "type": "sensor", "unique_id": "Eeps_L2N_all", "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL, "device_class": SensorDeviceClass.ENERGY, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
+                    {"name": "Energy EPS L1N Day", "type": "sensor", "unique_id": "EepsL1N_day", "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL, "device_class": SensorDeviceClass.ENERGY, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
+                    {"name": "Energy EPS L2N Day", "type": "sensor", "unique_id": "EepsL2N_day", "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL, "device_class": SensorDeviceClass.ENERGY, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
+                    {"name": "Energy EPS L1N All", "type": "sensor", "unique_id": "EepsL1N_all", "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL, "device_class": SensorDeviceClass.ENERGY, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
+                    {"name": "Energy EPS L2N All", "type": "sensor", "unique_id": "EepsL2N_all", "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR, "state_class": SensorStateClass.TOTAL, "device_class": SensorDeviceClass.ENERGY, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
                     {"name": "Reactive Power (Qinv Var)", "type": "sensor", "unique_id": "Qinv", "unit_of_measurement": UnitOfApparentPower.VOLT_AMPERE, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.APPARENT_POWER, "allowed_firmware_codes": ["FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
                     {"name": "Arc Fault Current CH1", "type": "sensor", "unique_id": "AFCI_CurrCH1", "unit_of_measurement": UnitOfElectricCurrent.MILLIAMPERE, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.CURRENT, "allowed_firmware_codes": ["FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
                     {"name": "Arc Fault Current CH2", "type": "sensor", "unique_id": "AFCI_CurrCH2", "unit_of_measurement": UnitOfElectricCurrent.MILLIAMPERE, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.CURRENT, "allowed_firmware_codes": ["FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
@@ -321,7 +321,7 @@ ENTITIES = {
                     {"name": "Realtime Arc of CH2", "type": "sensor", "unique_id": "AFCI_ArcCH2", "unit_of_measurement": UnitOfTime.SECONDS, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.DURATION, "allowed_firmware_codes": ["FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
                     {"name": "Realtime Arc of CH3", "type": "sensor", "unique_id": "AFCI_ArcCH3", "unit_of_measurement": UnitOfTime.SECONDS, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.DURATION, "allowed_firmware_codes": ["FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
                     {"name": "Realtime Arc of CH4", "type": "sensor", "unique_id": "AFCI_ArcCH4", "unit_of_measurement": UnitOfTime.SECONDS, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.DURATION, "allowed_firmware_codes": ["FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
-                    {"name":  "AC Coupled Power", "type": "sensor", "unique_id": "ACCoupledPower", "unit_of_measurement": UnitOfPower.WATT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.POWER, "allowed_firmware_codes": ["FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
+                    {"name":  "AC Coupled Power", "type": "sensor", "unique_id": "ACCouplePower", "unit_of_measurement": UnitOfPower.WATT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.POWER, "allowed_firmware_codes": ["FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
                     {"name": "Grid Voltage L1N", "type": "sensor", "unique_id": "GridVoltL1N", "unit_of_measurement": UnitOfElectricPotential.VOLT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.VOLTAGE, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
                     {"name": "Grid Voltage L2N", "type": "sensor", "unique_id": "GridVoltL2N", "unit_of_measurement": UnitOfElectricPotential.VOLT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.VOLTAGE, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
                     {"name": "Gen Voltage L1N", "type": "sensor", "unique_id": "GenVoltL1N", "unit_of_measurement": UnitOfElectricPotential.VOLT, "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.VOLTAGE, "allowed_firmware_codes": ["FAAA", "FAAB", "ccaa"]},
@@ -372,13 +372,13 @@ ENTITIES = {
             },
             "binary_sensor": {  # This should be the only place defining these sensors
                 "battery": [  # Only one bank for battery sensors
-                    {"name": "Battery Charge", 
-                    "type": "binary_sensor", 
+                    {"name": "Battery Charge",
+                    "type": "binary_sensor",
                     "unique_id": "battery_charge_status",
                     "parent_sensor": "batstatus_inv",
                     "status_type": "charge"},
-                    {"name": "Battery Discharge", 
-                    "type": "binary_sensor", 
+                    {"name": "Battery Discharge",
+                    "type": "binary_sensor",
                     "unique_id": "battery_discharge_status",
                     "parent_sensor": "batstatus_inv",
                     "status_type": "discharge"}
@@ -408,14 +408,14 @@ ENTITIES = {
                 "holdbank4": [
                     {"name": "Off-grid Discharge Cut-off SOC Limit", "type": "number", "unique_id": "SOCLowLimitForESPSDischg", "unit": "PERCENT", "min": 0, "max": 90, "mode": "slider"},
                 ],
-                
+
             },
             "select": {
                 "holdbank3": [
                     {"name": "CT Sample Ratio", "type": "select", "unique_id": "CTSampleRatio", "options": ["1:1000", "1:3000"]},
                     {"name": "Clear Parallel Alarm", "type": "select", "unique_id": "ClearParallelAlarm", "options": ["N/A", "Clear" ]},
 
-                    
+
                 ],
                 "holdbank4": [
                     {"name": "00:00 -- 00:30", "type": "select", "unique_id": "Time0", "options": ["Does Not Operate", "AC Charge", "PV Charge", "Discharge"]},
@@ -470,10 +470,10 @@ ENTITIES = {
 
                     # Add more selects as needed
                 ],
-                "holdbank6": [ 
+                "holdbank6": [
                     {"name": "Quick Charge Duration", "type": "select", "unique_id": "quickchgtime", "options": ["0", "15", "30", "45", "60", "90", "120"], "additional_payload": {"key": "ubquickchgstarten","value_map": {"0": "0","default": "1"}}},
 
-                ] 
+                ]
             },
             "button": {
                 "inputbank1": [
@@ -484,7 +484,7 @@ ENTITIES = {
                 ],
             },
 
-            "time": { 
+            "time": {
                 "holdbank2": [
                     {"name": "AC Charge Start", "type": "time", "unique_id": "ACChgStart"},
                     {"name": "AC Charge End", "type": "time", "unique_id": "ACChgEnd"},

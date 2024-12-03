@@ -179,7 +179,7 @@ ENTITIES = {
         "Lux": {
             "sensor": {
                 "calculated": [
-                    {"name": "Battery Time to Empty", "type": "sensor", "unique_id": "battery_time_empty", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.DURATION, "unit_of_measurement": UnitOfTime.HOUR, "calculation": {"operation": "battery_time", "sensors": ["batcapacity", "vbat", "pload", "batteryflow_live", "soc", "pall"], "attributes": ["calculated_kwh_storage_total", "calculated_kwh_left", "time_battery_empty", "human_readable_time_left"]}},
+                    {"name": "Battery Time to Empty", "type": "sensor", "unique_id": "battery_time_empty", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.DURATION, "unit_of_measurement": UnitOfTime.HOURS, "calculation": {"operation": "battery_time", "sensors": ["batcapacity", "vbat", "pload", "batteryflow_live", "soc", "pall"], "attributes": ["calculated_kwh_storage_total", "calculated_kwh_left", "time_battery_empty", "human_readable_time_left"]}},
                     {"name": "PV1 Current", "type": "sensor", "unique_id": "ipv1", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.CURRENT, "unit_of_measurement": UnitOfElectricCurrent.AMPERE, "calculation": {"operation": "division", "sensors": ["ppv1", "vpv1"]}, "allowed_firmware_codes": ["AAAA", "AAAB", "FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
                     {"name": "PV2 Current", "type": "sensor", "unique_id": "ipv2", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.CURRENT, "unit_of_measurement": UnitOfElectricCurrent.AMPERE, "calculation": {"operation": "division", "sensors": ["ppv2", "vpv2"]}, "allowed_firmware_codes": ["AAAA", "AAAB", "FAAA", "FAAB", "EAAA", "EAAB", "ccaa"]},
                     {"name": "PV3 Current", "type": "sensor", "unique_id": "ipv3", "state_class": SensorStateClass.MEASUREMENT, "device_class": SensorDeviceClass.CURRENT, "unit_of_measurement": UnitOfElectricCurrent.AMPERE, "calculation": {"operation": "division", "sensors": ["ppv3", "vpv3"]}, "allowed_firmware_codes": ["FAAB","FAAA", "FAAB", "EAAA", "EAAB"]},
@@ -277,7 +277,7 @@ ENTITIES = {
                     {"name": "Battery Max Discharge Current", "type": "sensor", "unique_id": "MaxDischgCurr", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricCurrent.AMPERE, "device_class": SensorDeviceClass.CURRENT},
                     {"name": "Battery Charge Voltage Ref", "type": "sensor", "unique_id": "ChargeVoltRef", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
                     {"name": "Battery Discharge Voltage Ref", "type": "sensor", "unique_id": "DischgCutVolt", "state_class": SensorStateClass.MEASUREMENT, "unit_of_measurement": UnitOfElectricPotential.VOLT, "device_class": SensorDeviceClass.VOLTAGE},
-                    {"name": "Battery BMS Status 0", "type": "sensor", "unique_id": "BMSBatStatus0_BMS"},
+                    {"name": "Battery BMS Status 0", "type": "sensor", "unique_id": "BatStatus0_BMS"},
                     {"name": "Battery BMS Status 5", "type": "sensor", "unique_id": "BatStatus5_BMS", },
                     {"name": "Battery Status Aggregrate Value", "type": "sensor", "unique_id": "BatStatus_INV"},
                     {"name": "Number Of Batteries (Parallel)", "type": "sensor", "unique_id": "BatParallelNum", "state_class": SensorStateClass.TOTAL},

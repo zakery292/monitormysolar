@@ -190,8 +190,9 @@ async def process_message(hass, topic, payload, dongle_id, inverter_brand):
             # New format with data wrapper
             payload_data = data["payload"]
             events_data = data.get("events", {})
-            fault_data = data.get("fault", {})
-            warning_data = data.get("warning", {})
+            # Get fault and warning data from events object
+            fault_data = events_data.get("fault", {})
+            warning_data = events_data.get("warning", {})
             # **Add this block to extract and store versions**
         else:
             # Old format - direct key-value pairs
@@ -223,7 +224,59 @@ async def process_message(hass, topic, payload, dongle_id, inverter_brand):
 
     formatted_dongle_id = dongle_id.replace(":", "_").lower()
 
+    # Process fault data
+    if fault_data:
+        _LOGGER.debug(f"Processing fault data: {fault_data}")
+        fault_value = fault_data.get("value", 0)
+        entity_id = f"sensor.{formatted_dongle_id}_fault_status"
+        
+        if fault_value == 0:
+            hass.bus.async_fire(f"{DOMAIN}_fault_updated", {
+                "entity": entity_id,
+                "value": {
+                    "value": 0,
+                    "description": None  # This will trigger "No Fault" state
+                }
+            })
+        else:
+            descriptions = fault_data.get("descriptions", ["Unknown Fault"])
+            timestamp = fault_data.get("timestamp", "Unknown")
+            hass.bus.async_fire(f"{DOMAIN}_fault_updated", {
+                "entity": entity_id,
+                "value": {
+                    "value": fault_value,
+                    "description": ", ".join(descriptions),
+                    "start_time": timestamp,
+                    "end_time": "Ongoing"
+                }
+            })
 
+    # Process warning data
+    if warning_data:
+        _LOGGER.debug(f"Processing warning data: {warning_data}")
+        warning_value = warning_data.get("value", 0)
+        entity_id = f"sensor.{formatted_dongle_id}_warning_status"
+        
+        if warning_value == 0:
+            hass.bus.async_fire(f"{DOMAIN}_warning_updated", {
+                "entity": entity_id,
+                "value": {
+                    "value": 0,
+                    "description": None  # This will trigger "No Warning" state
+                }
+            })
+        else:
+            descriptions = warning_data.get("descriptions", ["Unknown Warning"])
+            timestamp = warning_data.get("timestamp", "Unknown")
+            hass.bus.async_fire(f"{DOMAIN}_warning_updated", {
+                "entity": entity_id,
+                "value": {
+                    "value": warning_value,
+                    "description": ", ".join(descriptions),
+                    "start_time": timestamp,
+                    "end_time": "Ongoing"
+                }
+            })
     # Process main sensor data
     for entity_id_suffix, state in payload_data.items():
     # Skip if we've already handled version keys
@@ -246,29 +299,7 @@ async def process_message(hass, topic, payload, dongle_id, inverter_brand):
                 "value": event_state
             })
 
-    # Process fault data if present (new format)
-    if fault_data:
-        _LOGGER.debug(f"Processing fault data: {fault_data}")
-        # Fire events for fault updates
-        for fault_id, fault_state in fault_data.items():
-            formatted_fault_id = fault_id.lower().replace("-", "_").replace(":", "_")
-            entity_id = f"binary_sensor.{formatted_dongle_id}_fault_{formatted_fault_id}"
-            hass.bus.async_fire(f"{DOMAIN}_binary_sensor_updated", {
-                "entity": entity_id, 
-                "value": fault_state
-            })
 
-    # Process warning data if present (new format)
-    if warning_data:
-        _LOGGER.debug(f"Processing warning data: {warning_data}")
-        # Fire events for warning updates
-        for warning_id, warning_state in warning_data.items():
-            formatted_warning_id = warning_id.lower().replace("-", "_").replace(":", "_")
-            entity_id = f"binary_sensor.{formatted_dongle_id}_warning_{formatted_warning_id}"
-            hass.bus.async_fire(f"{DOMAIN}_binary_sensor_updated", {
-                "entity": entity_id, 
-                "value": warning_state
-            })
 
 
 

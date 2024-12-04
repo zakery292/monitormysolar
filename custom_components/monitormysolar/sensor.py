@@ -805,19 +805,26 @@ class TemperatureSensor(SensorEntity):
         """Handle the event."""
         _LOGGER.debug(f"Handling event for sensor {self.entity_id}: {event.data}")
         event_entity_id = event.data.get("entity").lower().replace("-", "_")
-        if hass.config.units is US_CUSTOMARY_SYSTEM:
-            self.unit_of_measurement = UnitOfTemperature.FAHRENHEIT
         if event_entity_id == self.entity_id:
             value = event.data.get("value")
             if value is not None:
+                # Default state to value sent in.
+                self._state = (
+                    round(value, 2) if isinstance(value, (float, int)) else value
+                )
+                # Check for HA config values and convert if neccessary.
                 if self.hass.config.units is US_CUSTOMARY_SYSTEM:
-                    self._state = (
-                        round( (((value)*9/5)+32), 2 ) if isinstance(value, (float, int)) else value
-                    )
+                    # Const defines Celsius but HA should show Fahrenheit.
+                    if UnitOfTemperature.FAHRENHEIT != self.sensor_info.get("unit_of_measurement"):
+                        self._state = (
+                            round( (((value)*9/5)+32), 2 ) if isinstance(value, (float, int)) else value
+                        )
                 else:
-                    self._state = (
-                        round(value, 2) if isinstance(value, (float, int)) else value
-                    )
+                    # Const defines Fahrenheit but HA should show Celsius.
+                    if UnitOfTemperature.CELSIUS != self.sensor_info.get("unit_of_measurement"):
+                        self._state = (
+                            round( ((value)-32/(9/5)), 2 ) if isinstance(value, (float, int)) else value
+                        )
                 _LOGGER.debug(f"Sensor {self.entity_id} state updated to {self._state}")
                 self.async_write_ha_state()
 

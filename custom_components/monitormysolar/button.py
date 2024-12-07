@@ -105,7 +105,7 @@ class FirmwareUpdateButton(ButtonEntity):
     async def async_will_remove_from_hass(self):
         """Unsubscribe from events when removed."""
         _LOGGER.debug(f"Button {self.entity_id} will be removed from hass")
-        self.hass.bus.async_remove_listener(f"{DOMAIN}_button_updated", self._handle_event)
+        self.hass.bus._async_remove_listener(f"{DOMAIN}_button_updated", self._handle_event)
 
 
 class RestartButton(ButtonEntity):
@@ -152,4 +152,4 @@ class RestartButton(ButtonEntity):
     async def async_will_remove_from_hass(self):
         """Unsubscribe from events when removed."""
         _LOGGER.debug(f"Button {self.entity_id} will be removed from hass")
-        self.hass.bus.async_remove_listener(f"{DOMAIN}_button_updated", self._handle_event)
+        self.hass.bus._async_remove_listener(f"{DOMAIN}_button_updated", self._handle_event)

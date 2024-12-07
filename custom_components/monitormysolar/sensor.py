@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import logging
 import json
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from .const import DOMAIN, ENTITIES, FIRMWARE_CODES
 from homeassistant.const import (
     CONF_MODE,
@@ -19,6 +19,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
+from homeassistant.util.unit_system import METRIC_SYSTEM, US_CUSTOMARY_SYSTEM
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,9 +30,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     brand_entities = ENTITIES.get(inverter_brand, {})
     sensors_config = brand_entities.get("sensor", {})
-    
+
     entities = []
-    
+
     # Loop through the sensors in the configuration
     for bank_name, sensors in sensors_config.items():
         for sensor in sensors:
@@ -63,13 +64,17 @@ async def async_setup_entry(hass, entry, async_add_entities):
                         entities.append(
                             CalculatedSensor(sensor, hass, entry, dongle_id, bank_name)
                         )
+                    elif bank_name == "temperature":
+                        entities.append(
+                            TemperatureSensor(sensor, hass, entry, dongle_id, bank_name)
+                        )
                     else:
                         entities.append(
                             InverterSensor(sensor, hass, entry, dongle_id, bank_name)
                         )
                 except Exception as e:
                     _LOGGER.error(f"Error setting up sensor {sensor}: {e}")
-    
+
     async_add_entities(entities, True)
 
 
@@ -107,7 +112,7 @@ class InverterSensor(SensorEntity):
 
     @property
     def unit_of_measurement(self):
-        return self.sensor_info.get("unit_of_measurement") 
+        return self.sensor_info.get("unit_of_measurement")
 
     @property
     def device_class(self):
@@ -229,13 +234,13 @@ class StatusSensor(SensorEntity):
                 # Extract the 'uptime' for the sensor's state
                 self._state = value.get("uptime")
                 _LOGGER.debug(f'State updated to: {self._state}')
-                
+
                 # Update the sensor's attributes based on the expected attributes list
                 for attr in self._expected_attributes:
                     self._attributes[attr] = value.get(attr, "unknown")
-                
+
                 _LOGGER.debug(f'Attributes updated to: {self._attributes}')
-                
+
                 self.async_write_ha_state()
 
     async def async_will_remove_from_hass(self):
@@ -294,7 +299,7 @@ class PowerFlowSensor(SensorEntity):
     def device_class(self):
         return self.sensor_info.get("device_class")
 
-    
+
     @property
     def extra_state_attributes(self):
         return {
@@ -431,7 +436,7 @@ class BankUpdateSensor(SensorEntity):
         self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
-        
+
         # Initialize attributes with None values
         self._attributes = {attr: None for attr in sensor_info.get("attributes", [])}
 
@@ -473,7 +478,7 @@ class BankUpdateSensor(SensorEntity):
             current_time = datetime.now().isoformat()
             attr_name = f"{bank_name}_last_update"
             _LOGGER.debug(f"Updating Attribute name: {attr_name}")
-            
+
             if attr_name in self._attributes:
                 self._attributes[attr_name] = current_time
                 self._state = current_time  # Update state to most recent update
@@ -487,9 +492,6 @@ class BankUpdateSensor(SensorEntity):
     async def async_added_to_hass(self):
         """Subscribe to events when added to hass."""
         _LOGGER.debug(f"Subscribing to bank update event for {self.entity_id}")
- 
- 
- 
         self.hass.bus.async_listen(f"{DOMAIN}_bank_updated", self._handle_bank_update)
 
 class FaultWarningSensor(SensorEntity):
@@ -506,7 +508,7 @@ class FaultWarningSensor(SensorEntity):
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
         self._bank_name = bank_name
-        
+
         self._history = []
         self._state = "No Fault" if "fault" in sensor_info["unique_id"] else "No Warning"
         self._value = 0
@@ -518,7 +520,7 @@ class FaultWarningSensor(SensorEntity):
     @property
     def unique_id(self):
         return self._unique_id
-    
+
     @property
     def state(self):
         """Return the state of the sensor."""
@@ -602,17 +604,17 @@ class CalculatedSensor(SensorEntity):
         self.entry = entry  # Store the entry for use in event handling
         self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}".lower()
         self._state = None
-        
+
         # Store the formatted IDs
         self._dongle_id = dongle_id.lower().replace("-", "_")  # For device_info
         self._formatted_id = dongle_id.lower().replace("-", "_").replace(":", "_")   # For sensor entity matching
-        
+
         self._sensor_type = sensor_info["unique_id"]
         self.entity_id = f"sensor.{self._formatted_id}_{self._sensor_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
         self._bank_name = bank_name
-        
+
         # Get calculation info
         self._calculation = sensor_info.get("calculation", {})
         self._operation = self._calculation.get("operation")
@@ -660,7 +662,7 @@ class CalculatedSensor(SensorEntity):
                 self._state = round(numerator / denominator, 2)
             else:
                 self._state = 0
-        
+
         elif self._operation == "battery_time":
             capacity_ah = self._sensor_values.get("batcapacity", 0)
             voltage = self._sensor_values.get("vbat", 0)
@@ -690,7 +692,7 @@ class CalculatedSensor(SensorEntity):
                     hours_remaining = usable_energy_wh / adjusted_load
                     current_time = datetime.now()
                     empty_time = current_time + timedelta(hours=hours_remaining)
-                    
+
                     self._attr_extra_state_attributes.update({
                         "time_battery_empty": empty_time.strftime('%Y-%m-%d %H:%M:%S'),
                         "human_readable_time_left": f"{int(hours_remaining)} hours, {int((hours_remaining - int(hours_remaining)) * 60)} minutes"
@@ -712,11 +714,11 @@ class CalculatedSensor(SensorEntity):
             f"sensor.{self._formatted_id}_{sensor.lower()}": sensor
             for sensor in self._source_sensors
         }
-        
+
         # Get the event entity ID
         event_entity_id = event.data.get("entity", "").lower().replace("-", "_").replace(":", "_")
         value = event.data.get("value", 0)
-        
+
         _LOGGER.warning(f"Event entity: {event_entity_id}")
         _LOGGER.warning(f"Watching source sensors: {list(source_entity_ids.keys())}")
 
@@ -724,11 +726,11 @@ class CalculatedSensor(SensorEntity):
         if event_entity_id in source_entity_ids:
             sensor_name = source_entity_ids[event_entity_id]
             self._sensor_values[sensor_name] = float(value)
-            
+
             _LOGGER.warning(
                 f"Updated {sensor_name} value to {value} for calculated sensor {self.entity_id}"
             )
-            
+
             self._calculate_state()
             self.async_write_ha_state()
 
@@ -739,3 +741,100 @@ class CalculatedSensor(SensorEntity):
     async def async_will_remove_from_hass(self):
         """Unsubscribe from events when removed."""
         self.hass.bus._async_remove_listener(f"{DOMAIN}_sensor_updated", self._handle_event)
+
+class TemperatureSensor(SensorEntity):
+    def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
+        """Initialize the temperature sensor."""
+        _LOGGER.debug(f"Initializing sensor with info: {sensor_info}")
+        self.sensor_info = sensor_info
+        self._name = sensor_info["name"]
+        self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}".lower()
+        self._state = None
+        self._dongle_id = dongle_id.lower().replace("-", "_")
+        self._device_id = dongle_id.lower().replace("-", "_")
+        self._sensor_type = sensor_info["unique_id"]
+        self._bank_name = bank_name
+        self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
+        self.hass = hass
+        self._manufacturer = entry.data.get("inverter_brand")
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def unique_id(self):
+        return self._unique_id
+
+    @property
+    def state(self):
+        return self._state
+
+    @property
+    def state_class(self):
+        return self.sensor_info.get("state_class")
+
+    @property
+    def unit_of_measurement(self):
+        if self.hass.config.units is US_CUSTOMARY_SYSTEM:
+            return UnitOfTemperature.FAHRENHEIT
+        else:
+            return UnitOfTemperature.CELSIUS
+
+    @property
+    def device_class(self):
+        return self.sensor_info.get("device_class")
+
+    @property
+    def last_reset(self):
+        """Return the time when the sensor was last reset (midnight)."""
+        if self.state_class == "total":
+            return datetime.min
+        return None
+
+    @property
+    def device_info(self):
+        return {
+            "identifiers": {(DOMAIN, self._dongle_id)},
+            "name": f"Inverter {self._dongle_id}",
+            "manufacturer": f"{self._manufacturer}",
+        }
+
+    @callback
+    def _handle_event(self, event):
+        """Handle the event."""
+        _LOGGER.debug(f"Handling event for sensor {self.entity_id}: {event.data}")
+        event_entity_id = event.data.get("entity").lower().replace("-", "_")
+        if event_entity_id == self.entity_id:
+            value = event.data.get("value")
+            if value is not None:
+                # Default state to value sent in.
+                self._state = (
+                    round(value, 2) if isinstance(value, (float, int)) else value
+                )
+                # Check for HA config values and convert if neccessary.
+                if self.hass.config.units is US_CUSTOMARY_SYSTEM:
+                    # Const defines Celsius but HA should show Fahrenheit.
+                    if UnitOfTemperature.FAHRENHEIT != self.sensor_info.get("unit_of_measurement"):
+                        self._state = (
+                            round( (((value)*9/5)+32), 2 ) if isinstance(value, (float, int)) else value
+                        )
+                else:
+                    # Const defines Fahrenheit but HA should show Celsius.
+                    if UnitOfTemperature.CELSIUS != self.sensor_info.get("unit_of_measurement"):
+                        self._state = (
+                            round( ((value)-32/(9/5)), 2 ) if isinstance(value, (float, int)) else value
+                        )
+                _LOGGER.debug(f"Sensor {self.entity_id} state updated to {self._state}")
+                self.async_write_ha_state()
+
+    async def async_will_remove_from_hass(self):
+        """Unsubscribe from events when removed."""
+        _LOGGER.debug(f"Sensor {self.entity_id} will be removed from hass")
+        self.hass.bus._async_remove_listener(f"{DOMAIN}_sensor_updated", self._handle_event)
+
+    async def async_added_to_hass(self):
+        """Call when entity is added to hass."""
+        _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
+        self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
+        _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")

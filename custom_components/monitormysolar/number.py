@@ -3,6 +3,7 @@ from homeassistant.components.number import NumberEntity
 from homeassistant.core import callback
 import json
 from .const import DOMAIN, ENTITIES
+from . import MonitorMySolarEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(entities, True)
 
 class InverterNumber(NumberEntity):
-    def __init__(self, entity_info, hass, entry, dongle_id, bank_name):
+    def __init__(self, entity_info, hass, entry: MonitorMySolarEntry, dongle_id, bank_name):
         """Initialize the number."""
         self.entity_info = entity_info
         self._attr_name = entity_info["name"]
@@ -49,11 +50,12 @@ class InverterNumber(NumberEntity):
             "name": f"Inverter {self._dongle_id}",
             "manufacturer": f"{self._manufacturer}",
         }
+        self.coordinator = entry.runtime_data
 
     async def async_set_native_value(self, value):
         """Set the number value."""
         _LOGGER.debug(f"Setting value of number {self.entity_id} to {value}")
-        mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
+        mqtt_handler = self.coordinator.mqtt_handler
         if mqtt_handler is not None:
             # Save the current value before changing
             self._previous_value = self._attr_native_value

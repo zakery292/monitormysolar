@@ -5,6 +5,7 @@ import json
 from homeassistant.core import HomeAssistant
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components import mqtt
+from . import MonitorMySolarEntry
 
 from .const import DOMAIN
 
@@ -20,8 +21,10 @@ class MQTTHandler:
         self.current_entity = None  # Store the current entity
         self._unsubscribe_response = None
 
-    async def async_setup(self, entry):
-        self.hass.data[DOMAIN]["mqtt_handler"] = self
+    async def async_setup(self, entry: MonitorMySolarEntry):
+        coordinator = entry.runtime_data
+        coordinator.mqtt_handler = self
+        entry.runtime_data = coordinator
 
     async def send_update(self, dongle_id, unique_id, value, entity):
         now = datetime.now()

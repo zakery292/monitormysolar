@@ -7,12 +7,17 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.components import mqtt
 from .const import DOMAIN, ENTITIES
 from .mqttHandeler import MQTTHandler
+from .coordinator import MonitorMySolar
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass: HomeAssistant, entry):
+type MonitorMySolarEntry = ConfigEntry[MonitorMySolar]
+
+async def async_setup_entry(hass: HomeAssistant, entry: MonitorMySolarEntry):
     try:
         _LOGGER.info(f"Setting up Monitor My Solar for {entry.data.get('inverter_brand')}")
+
+        coordinator = MonitorMySolar(hass, entry)
 
         config = entry.data
         inverter_brand = config.get("inverter_brand")
@@ -21,16 +26,14 @@ async def async_setup_entry(hass: HomeAssistant, entry):
 
         # Initialize the MQTT handler and store it in the hass data under the domain
         mqtt_handler = MQTTHandler(hass)
-        hass.data.setdefault(DOMAIN, {})["mqtt_handler"] = mqtt_handler
+        # hass.data.setdefault(DOMAIN, {})["mqtt_handler"] = mqtt_handler
+
+        entry.runtime_data = coordinator
 
         brand_entities = ENTITIES.get(inverter_brand, {})
         if not brand_entities:
             _LOGGER.error(f"No entities defined for inverter brand: {inverter_brand}")
             return False
-
-        # Initialize the DOMAIN key in hass.data if it doesn't exist
-        if DOMAIN not in hass.data:
-            hass.data[DOMAIN] = {}
 
         async def process_incoming_message(msg):
             if msg.topic == f"{dongle_id}/firmwarecode/response":
@@ -39,7 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     data = json.loads(msg.payload)
                     firmware_code = data.get("FWCode")
                     if firmware_code:
-                        hass.data[DOMAIN]["firmware_code"] = firmware_code
+                        coordinator.firmware_code = firmware_code
                         _LOGGER.debug(f"Firmware code received: {firmware_code}")
                         hass.config_entries.async_update_entry(
                             entry, data={**entry.data, "firmware_code": firmware_code}
@@ -56,7 +59,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             elif msg.topic == f"{dongle_id}/status":
                 await process_status_message(hass, msg.payload, dongle_id)
             else:
-                await process_message(hass, msg.topic, msg.payload, dongle_id, inverter_brand)
+                await process_message(hass, entry, msg.topic, msg.payload, dongle_id, inverter_brand)
 
 
         await mqtt.async_subscribe(hass, f"{dongle_id}/#", process_incoming_message)
@@ -66,13 +69,13 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             await mqtt.async_publish(hass, f"{dongle_id}/firmwarecode/request", "")
 
             async def firmware_timeout(_):
-                if "firmware_code" not in hass.data[DOMAIN]:
+                if "" == coordinator.firmware_code:
                     _LOGGER.error("Firmware code response not received within timeout")
                     await async_unload_entry(hass, entry)
 
             async_call_later(hass, 15, firmware_timeout)
         else:
-            hass.data[DOMAIN]["firmware_code"] = firmware_code
+            coordinator.firmware_code = firmware_code
             setup_success = await setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code)
             if not setup_success:
                 return False
@@ -81,7 +84,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             try:
                 _LOGGER.info("Reloading Monitor My Solar integration")
                 await async_unload_entry(hass, entry)
-                firmware_code = hass.data[DOMAIN].get("firmware_code")
+                firmware_code = coordinator.firmware_code
                 await async_setup_entry(hass, entry)
             except Exception as e:
                 _LOGGER.error(f"Error during reload: {e}")
@@ -94,7 +97,7 @@ async def async_setup_entry(hass: HomeAssistant, entry):
         _LOGGER.error(f"Failed to set up Monitor My Solar: {e}")
         return False
 
-async def async_unload_entry(hass, entry):
+async def async_unload_entry(hass, entry: MonitorMySolarEntry):
     """Unload a config entry."""
     _LOGGER.info(f"Unloading Monitor My Solar for {entry.data.get('inverter_brand')}")
     try:
@@ -115,7 +118,7 @@ async def async_unload_entry(hass, entry):
         _LOGGER.error(f"Error during unload: {e}")
         return False
 
-async def setup_entities(hass, entry, inverter_brand, dongle_id, firmware_code):
+async def setup_entities(hass, entry: MonitorMySolarEntry, inverter_brand, dongle_id, firmware_code):
     """Set up the entities based on the firmware code."""
     platforms = [
         Platform.SENSOR,
@@ -163,13 +166,14 @@ async def process_status_message(hass, payload, dongle_id):
     hass.bus.async_fire(f"{DOMAIN}_uptime_sensor_updated", {"entity": entity_id, "value": status_data})
     _LOGGER.debug(f"Event fired for status sensor {entity_id}")
 
-async def process_message(hass, topic, payload, dongle_id, inverter_brand):
+async def process_message(hass, entry: MonitorMySolarEntry, topic, payload, dongle_id, inverter_brand):
     """Process incoming MQTT message and update entity states."""
     try:
         data = json.loads(payload)
         bank_name = topic.split('/')[-1]  # Gets 'inputbank1', 'holdbank2', etc.
         hass.bus.async_fire(f"{DOMAIN}_bank_updated", {"bank_name": bank_name})
         _LOGGER.debug(f"Event fired for bank {bank_name}")
+        coordinator = entry.runtime_data
         
     except ValueError:
         _LOGGER.error("Invalid JSON payload received")
@@ -199,7 +203,7 @@ async def process_message(hass, topic, payload, dongle_id, inverter_brand):
             payload_data = data
     if "SW_VERSION" in payload_data:
         fw_version = payload_data["SW_VERSION"]
-        hass.data[DOMAIN]["current_fw_version"] = fw_version
+        coordinator.current_fw_version = fw_version
         _LOGGER.debug(f"Current firmware version set: {fw_version}")
         # Fire event for update entity
         entity_id = f"update.{dongle_id}_firmware_update"
@@ -211,7 +215,7 @@ async def process_message(hass, topic, payload, dongle_id, inverter_brand):
     # Update UI version
     if "UI_VERSION" in payload_data:
         ui_version = payload_data["UI_VERSION"]
-        hass.data[DOMAIN]["current_ui_version"] = ui_version
+        coordinator.current_ui_version = ui_version
         _LOGGER.debug(f"Current UI version set: {ui_version}")
         # Fire event for update entity
         entity_id = f"update.{dongle_id}_ui_update"

@@ -2,6 +2,7 @@ import logging
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import callback
 from .const import DOMAIN, ENTITIES
+from . import MonitorMySolarEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(entities, True)
 
 class InverterSelect(SelectEntity):
-    def __init__(self, entity_info, hass, entry, dongle_id):
+    def __init__(self, entity_info, hass, entry: MonitorMySolarEntry, dongle_id):
         """Initialize the select entity."""
         _LOGGER.debug(f"Initializing select with info: {entity_info}")
         self.entity_info = entity_info
@@ -39,6 +40,7 @@ class InverterSelect(SelectEntity):
         self.hass = hass
         self._options = entity_info["options"]
         self._manufacturer = entry.data.get("inverter_brand")
+        self.coordinator = entry.runtime_data
 
     @property
     def name(self):
@@ -74,7 +76,7 @@ class InverterSelect(SelectEntity):
 
         bit_value = self._options.index(option)
         _LOGGER.info(f"Setting Select value for {self.entity_id} to {option}")
-        await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
+        await self.coordinator.mqtt_handler.send_update(
             self._dongle_id.replace("_", "-"),
             self.entity_info["unique_id"],
             bit_value,
@@ -133,7 +135,7 @@ class QuickChargeDurationSelect(SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
-        mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
+        mqtt_handler = self.coordinator.mqtt_handler
         if mqtt_handler is not None:
             # Prepare the payload dictionary
             payload_dict = {

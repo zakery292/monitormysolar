@@ -13,15 +13,19 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
 from .const import DOMAIN, ENTITIES
+from .coordinator import MonitorMySolar
+from . import MonitorMySolarEntry
 
 _LOGGER = logging.getLogger(__name__)
 
 UPDATE_URL = "https://monitoring.monitormy.solar/version"
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
+async def async_setup_entry(hass: HomeAssistant, entry: MonitorMySolarEntry, async_add_entities) -> None:
     """Set up update entities."""
     inverter_brand = entry.data.get("inverter_brand")
     dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
+
+    coordinator = entry.runtime_data
 
     _LOGGER.info(f"Setting up update entities for {inverter_brand}")
 
@@ -31,7 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             async with session.get(UPDATE_URL) as response:
                 if response.status == 200:
                     server_data = await response.json()
-                    hass.data[DOMAIN]["server_versions"] = server_data
+                    coordinator.server_versions = server_data
                     _LOGGER.debug(f"Update server returned: {server_data}")
                 else:
                     _LOGGER.error(f"Failed to fetch versions: {response.status}")
@@ -73,7 +77,7 @@ class InverterUpdate(UpdateEntity):
     def __init__(
         self, 
         hass: HomeAssistant,
-        entry: ConfigEntry,
+        entry: MonitorMySolarEntry,
         name: str,
         unique_id: str,
         dongle_id: str,
@@ -90,6 +94,7 @@ class InverterUpdate(UpdateEntity):
         self._update_command = update_command
         self._manufacturer = entry.data.get("inverter_brand")
         self.entity_id = f"update.{self._device_id}_{unique_id.lower()}"
+        self._coordinator = entry.runtime_data
         
         # Set initial versions
         self._attr_installed_version = self._get_installed_version()
@@ -118,8 +123,8 @@ class InverterUpdate(UpdateEntity):
     def _get_installed_version(self) -> str:
         """Get current installed version from domain data."""
         if self._version_key == "UI_VERSION":
-            return self.hass.data[DOMAIN].get("current_ui_version", "Waiting...")
-        return self.hass.data[DOMAIN].get("current_fw_version", "Waiting...")
+            return self._coordinator.current_ui_version or "Waiting..."
+        return self._coordinator.current_fw_version or "Waiting..."
 
     @property
     def installed_version(self) -> str:
@@ -132,14 +137,14 @@ class InverterUpdate(UpdateEntity):
 
     def _get_latest_version(self) -> str | None:
         """Get latest version from server data."""
-        server_versions = self.hass.data[DOMAIN].get("server_versions", {})
+        server_versions = self._coordinator.server_versions or {}
         if self._version_key == "UI_VERSION":
             return server_versions.get("latestUiVersion")
         return server_versions.get("latestFwVersion")
 
     def _get_release_notes(self) -> str | None:
         """Get release notes from server data."""
-        server_versions = self.hass.data[DOMAIN].get("server_versions", {})
+        server_versions = self._coordinator.server_versions or {}
         changelog = server_versions.get("changelog")
         if not changelog:
             return None
@@ -187,7 +192,7 @@ class InverterUpdate(UpdateEntity):
     ) -> None:
         """Install an update."""
         _LOGGER.debug(f"Install update called for {self.name}")
-        mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
+        mqtt_handler = self._coordinator.mqtt_handler
         if mqtt_handler:
             await mqtt_handler.send_update(
                 self._dongle_id,

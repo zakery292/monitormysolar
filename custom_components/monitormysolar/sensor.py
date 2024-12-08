@@ -154,15 +154,12 @@ class InverterSensor(SensorEntity):
                 _LOGGER.debug(f"Sensor {self.entity_id} state updated to {self._state}")
                 self.async_write_ha_state()
 
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Sensor {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_sensor_updated", self._handle_event)
-
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
         _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
-        self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
+        )
         _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")
 
 
@@ -243,15 +240,12 @@ class StatusSensor(SensorEntity):
 
                 self.async_write_ha_state()
 
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Sensor {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_uptime_sensor_updated", self._handle_event)
-
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
         _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
-        self.hass.bus.async_listen(f"{DOMAIN}_uptime_sensor_updated", self._handle_event)
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_uptime_sensor_updated", self._handle_event)
+        )
         _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")
 
 
@@ -337,13 +331,10 @@ class PowerFlowSensor(SensorEntity):
 
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
-        self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
+        )
         _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")
-
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Sensor {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_sensor_updated", self._handle_event)
 
 
 
@@ -412,15 +403,12 @@ class CombinedSensor(SensorEntity):
             self._state = sum(self._sensor_values.values())
             self.async_write_ha_state()
 
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Sensor {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_sensor_updated", self._handle_event)
-
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
         _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
-        self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
+        )
         _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")
 
 class BankUpdateSensor(SensorEntity):
@@ -484,15 +472,12 @@ class BankUpdateSensor(SensorEntity):
                 self._state = current_time  # Update state to most recent update
                 self.async_write_ha_state()
 
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Unsubscribing from bank update event for {self.entity_id}")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_bank_updated", self._handle_bank_update)
-
     async def async_added_to_hass(self):
         """Subscribe to events when added to hass."""
         _LOGGER.debug(f"Subscribing to bank update event for {self.entity_id}")
-        self.hass.bus.async_listen(f"{DOMAIN}_bank_updated", self._handle_bank_update)
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_bank_updated", self._handle_bank_update)
+        )
 
 class FaultWarningSensor(SensorEntity):
     def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
@@ -587,14 +572,12 @@ class FaultWarningSensor(SensorEntity):
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
         _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
-        self.hass.bus.async_listen(f"{DOMAIN}_warning_updated", self._handle_event)
-        self.hass.bus.async_listen(f"{DOMAIN}_fault_updated", self._handle_event)
-
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Sensor {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_warning_updated", self._handle_event)
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_fault_updated", self._handle_event)
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_warning_updated", self._handle_event)
+        )
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_fault_updated", self._handle_event)
+        )
 
 class CalculatedSensor(SensorEntity):
     def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
@@ -736,11 +719,9 @@ class CalculatedSensor(SensorEntity):
 
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
-        self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
-
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_sensor_updated", self._handle_event)
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
+        )
 
 class TemperatureSensor(SensorEntity):
     def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
@@ -828,13 +809,10 @@ class TemperatureSensor(SensorEntity):
                 _LOGGER.debug(f"Sensor {self.entity_id} state updated to {self._state}")
                 self.async_write_ha_state()
 
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Sensor {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_sensor_updated", self._handle_event)
-
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
         _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
-        self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
+        )
         _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")

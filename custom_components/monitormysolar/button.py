@@ -102,11 +102,6 @@ class FirmwareUpdateButton(ButtonEntity):
                 "title": "Firmware Update",
                 "message": "No update available for the dongle."
             })
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Button {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_button_updated", self._handle_event)
-
 
 class RestartButton(ButtonEntity):
     def __init__(self, button_info, hass, entry, dongle_id, bank_name, mqtt_handler):
@@ -148,8 +143,3 @@ class RestartButton(ButtonEntity):
                 value,
                 self,
             )
-
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Button {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_button_updated", self._handle_event)

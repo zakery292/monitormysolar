@@ -111,8 +111,6 @@ async def async_unload_entry(hass, entry: MonitorMySolarEntry):
             Platform.BUTTON,
             Platform.UPDATE,
         ])
-        if unload_ok:
-            hass.data.pop(DOMAIN)
         return unload_ok
     except Exception as e:
         _LOGGER.error(f"Error during unload: {e}")
@@ -131,16 +129,17 @@ async def setup_entities(hass, entry: MonitorMySolarEntry, inverter_brand, dongl
         Platform.UPDATE,
     ]
 
-    for platform in platforms:
-        try:
-            _LOGGER.info(f"Setting up {platform} entities for {inverter_brand}")
-            if not hass.data.get(f"{DOMAIN}_setup_done_{platform}", False):
-                await hass.config_entries.async_forward_entry_setups(entry, [platform])
-                hass.data[f"{DOMAIN}_setup_done_{platform}"] = True
-            _LOGGER.info(f"Successfully set up {platform} entities for {inverter_brand}")
-        except Exception as e:
-            _LOGGER.error(f"Error setting up {platform} entities: {e}")
-            return False  # Return False if there's an error in setting up a platform
+    # for platform in platforms:
+    #     try:
+    #         _LOGGER.info(f"Setting up {platform} entities for {inverter_brand}")
+    #         if not hass.data.get(f"{DOMAIN}_setup_done_{platform}", False):
+    #             await hass.config_entries.async_forward_entry_setups(entry, [platform])
+    #             hass.data[f"{DOMAIN}_setup_done_{platform}"] = True
+    #         _LOGGER.info(f"Successfully set up {platform} entities for {inverter_brand}")
+    #     except Exception as e:
+    #         _LOGGER.error(f"Error setting up {platform} entities: {e}")
+    #         return False  # Return False if there's an error in setting up a platform
+    await hass.config_entries.async_forward_entry_setups(entry, platforms)
     return True  # Return True if all platforms are set up successfully
 
 

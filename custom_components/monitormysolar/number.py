@@ -92,12 +92,7 @@ class InverterNumber(NumberEntity):
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
         #_LOGGER.debug(f"Number {self.entity_id} added to hass")
-        self.hass.bus.async_listen(f"{DOMAIN}_number_updated", self._handle_event)
-       # _LOGGER.debug(f"Number {self.entity_id} subscribed to event")
-
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-       # _LOGGER.debug(f"Number {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(
-            f"{DOMAIN}_number_updated", self._handle_event
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_number_updated", self._handle_event)
         )
+       # _LOGGER.debug(f"Number {self.entity_id} subscribed to event")

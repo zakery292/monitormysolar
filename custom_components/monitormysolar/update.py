@@ -178,14 +178,12 @@ class InverterUpdate(UpdateEntity):
 
     async def async_added_to_hass(self):
         """Subscribe to events when added to hass."""
-        self.hass.bus.async_listen(f"{DOMAIN}_update_version", self._handle_version_update)
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_update_version", self._handle_version_update)
+        )
         # Initial state update
         self._attr_installed_version = self._get_installed_version()
         self.async_write_ha_state()
-
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_update_version", self._handle_version_update)
 
     async def async_install(
         self, version: str | None, backup: bool, **kwargs

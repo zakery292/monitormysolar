@@ -4,6 +4,7 @@ import asyncio
 from homeassistant.components.time import TimeEntity
 from homeassistant.core import callback
 from .const import DOMAIN, ENTITIES
+from . import MonitorMySolarEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(entities, True)
 
 class InverterTime(TimeEntity):
-    def __init__(self, entity_info, hass, entry, dongle_id):
+    def __init__(self, entity_info, hass, entry: MonitorMySolarEntry, dongle_id):
         """Initialize the Time entity."""
         _LOGGER.debug(f"Initializing Time entity with info: {entity_info}")
         self.entity_info = entity_info
@@ -38,6 +39,7 @@ class InverterTime(TimeEntity):
         self._manufacturer = entry.data.get("inverter_brand")
         self._last_mqtt_update = None
         self._debounce_task = None
+        self.coordinator = entry.runtime_data
 
     @property
     def name(self):
@@ -80,7 +82,7 @@ class InverterTime(TimeEntity):
 
             _LOGGER.info(f"Setting time value for {self.entity_id} to {value}")
             self.update_state(value)
-            await self.hass.data[DOMAIN]["mqtt_handler"].send_update(
+            await self.coordinator.mqtt_handler.send_update(
                 self._dongle_id.replace("_", "-"),
                 self.entity_info["unique_id"],
                 value.isoformat(),
@@ -115,13 +117,9 @@ class InverterTime(TimeEntity):
             if value is not None:
                 self.update_state(value)
 
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Time {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_time_updated", self._handle_event)
-
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
         #_LOGGER.debug(f"Time {self.entity_id} added to hass")
-        self.hass.bus.async_listen(f"{DOMAIN}_time_updated", self._handle_event)
-        #_LOGGER.debug(f"Time {self.entity_id} subscribed to event")
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_time_updated", self._handle_event)
+        )

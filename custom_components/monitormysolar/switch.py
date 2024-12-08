@@ -2,6 +2,7 @@ import logging
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import callback
 from .const import DOMAIN, ENTITIES, FIRMWARE_CODES
+from . import MonitorMySolarEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     async_add_entities(entities, True)
 
 class InverterSwitch(SwitchEntity):
-    def __init__(self, entity_info, hass, entry, dongle_id, bank_name):
+    def __init__(self, entity_info, hass, entry: MonitorMySolarEntry, dongle_id, bank_name):
         """Initialize the switch."""
         _LOGGER.debug(f"Initializing switch with info: {entity_info}")
         self.entity_info = entity_info
@@ -43,6 +44,7 @@ class InverterSwitch(SwitchEntity):
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
         self._previous_state = None
+        self.coordinator = entry.runtime_data
 
     @property
     def name(self):
@@ -66,7 +68,7 @@ class InverterSwitch(SwitchEntity):
 
     async def async_turn_on(self, **kwargs):
         """Turn the switch on."""
-        mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
+        mqtt_handler = self.coordinator.mqtt_handler
         if mqtt_handler is not None:
             self._previous_state = self._state
             self._state = True  # Optimistically update the state
@@ -82,7 +84,7 @@ class InverterSwitch(SwitchEntity):
 
     async def async_turn_off(self, **kwargs):
         """Turn the switch off."""
-        mqtt_handler = self.hass.data[DOMAIN].get("mqtt_handler")
+        mqtt_handler = self.coordinator.mqtt_handler
         if mqtt_handler is not None:
             self._previous_state = self._state  # Save the current state before changing
             self._state = False  # Optimistically update the state in HA
@@ -116,13 +118,10 @@ class InverterSwitch(SwitchEntity):
                 # Schedule state update on the main thread
                 self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from events when removed."""
-        _LOGGER.debug(f"Switch {self.entity_id} will be removed from hass")
-        self.hass.bus._async_remove_listener(f"{DOMAIN}_switch_updated", self._handle_event)
-
     async def async_added_to_hass(self):
         """Call when entity is added to hass."""
         _LOGGER.debug(f"Switch {self.entity_id} added to hass")
-        self.hass.bus.async_listen(f"{DOMAIN}_switch_updated", self._handle_event)
+        self.async_on_remove(
+            self.hass.bus.async_listen(f"{DOMAIN}_switch_updated", self._handle_event)
+        )
         _LOGGER.debug(f"Switch {self.entity_id} subscribed to event")

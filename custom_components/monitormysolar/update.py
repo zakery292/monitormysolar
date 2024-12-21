@@ -61,7 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         _LOGGER.debug(f"Adding {len(entities)} update entities")
         async_add_entities(entities)
     else:
-        _LOGGER.warning("No update entities were created")
+        _LOGGER.debug("No update entities were created")
 
 class InverterUpdate(UpdateEntity):
     """Update entity for MonitorMySolar."""

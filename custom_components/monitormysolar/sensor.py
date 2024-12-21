@@ -717,15 +717,15 @@ class CalculatedSensor(SensorEntity):
         event_entity_id = event.data.get("entity", "").lower().replace("-", "_").replace(":", "_")
         value = event.data.get("value", 0)
         
-        _LOGGER.warning(f"Event entity: {event_entity_id}")
-        _LOGGER.warning(f"Watching source sensors: {list(source_entity_ids.keys())}")
+        _LOGGER.debug(f"Event entity: {event_entity_id}")
+        _LOGGER.debug(f"Watching source sensors: {list(source_entity_ids.keys())}")
 
         # Check if this event matches one of our source sensors
         if event_entity_id in source_entity_ids:
             sensor_name = source_entity_ids[event_entity_id]
             self._sensor_values[sensor_name] = float(value)
             
-            _LOGGER.warning(
+            _LOGGER.debug(
                 f"Updated {sensor_name} value to {value} for calculated sensor {self.entity_id}"
             )
             

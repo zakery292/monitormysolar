@@ -7,11 +7,9 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.components import mqtt
 from .const import DOMAIN, ENTITIES
 from .mqttHandeler import MQTTHandler
-from .coordinator import MonitorMySolar
+from .coordinator import MonitorMySolar, MonitorMySolarEntry
 
 _LOGGER = logging.getLogger(__name__)
-
-type MonitorMySolarEntry = ConfigEntry[MonitorMySolar]
 
 async def async_setup_entry(hass: HomeAssistant, entry: MonitorMySolarEntry):
     try:
@@ -26,6 +24,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: MonitorMySolarEntry):
 
         # Initialize the MQTT handler and store it in the hass data under the domain
         mqtt_handler = MQTTHandler(hass)
+        coordinator.mqtt_handler = mqtt_handler
         # hass.data.setdefault(DOMAIN, {})["mqtt_handler"] = mqtt_handler
 
         entry.runtime_data = coordinator

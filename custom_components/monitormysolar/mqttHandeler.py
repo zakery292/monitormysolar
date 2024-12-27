@@ -5,7 +5,7 @@ import json
 from homeassistant.core import HomeAssistant
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components import mqtt
-from . import MonitorMySolarEntry
+from .coordinator import MonitorMySolarEntry
 
 from .const import DOMAIN
 

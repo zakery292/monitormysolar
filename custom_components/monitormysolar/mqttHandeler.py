@@ -1,15 +1,11 @@
-import logging
 import asyncio
 from datetime import datetime
 import json
 from homeassistant.core import HomeAssistant
 from homeassistant.components.mqtt import async_publish
 from homeassistant.components import mqtt
-from .coordinator import MonitorMySolarEntry
 
-from .const import DOMAIN
-
-_LOGGER = logging.getLogger(__name__)
+from .const import DOMAIN, LOGGER
 
 class MQTTHandler:
     def __init__(self, hass: HomeAssistant):
@@ -21,23 +17,18 @@ class MQTTHandler:
         self.current_entity = None  # Store the current entity
         self._unsubscribe_response = None
 
-    async def async_setup(self, entry: MonitorMySolarEntry):
-        coordinator = entry.runtime_data
-        coordinator.mqtt_handler = self
-        entry.runtime_data = coordinator
-
     async def send_update(self, dongle_id, unique_id, value, entity):
         now = datetime.now()
-        _LOGGER.info(f"Sending update for {entity.entity_id} with value {value}")
+        LOGGER.info(f"Sending update for {entity.entity_id} with value {value}")
 
         # Rate limiting logic: only allow one update per 1 second per entity
         if self.last_time_update and (now - self.last_time_update).total_seconds() < 1:
-            _LOGGER.info(f"Rate limit hit for {entity.entity_id}. Dropping update.")
+            LOGGER.info(f"Rate limit hit for {entity.entity_id}. Dropping update.")
             return
 
         async with self._lock:  # Ensure only one command is processed at a time
             if self._processing:
-                _LOGGER.info(f"Already processing an update for {entity.entity_id}.")
+                LOGGER.info(f"Already processing an update for {entity.entity_id}.")
                 return
 
             self._processing = True
@@ -67,7 +58,7 @@ class MQTTHandler:
             "from": "homeassistant"
         })
         
-        _LOGGER.info(f"Sending MQTT update: {topic} - {payload} at {datetime.now()}")
+        LOGGER.info(f"Sending MQTT update: {topic} - {payload} at {datetime.now()}")
         await mqtt.async_publish(self.hass, topic, payload)
 
         self.response_received_event.clear()  # Reset the event before sending the update
@@ -87,10 +78,10 @@ class MQTTHandler:
 
         try:
             await asyncio.wait_for(self.response_received_event.wait(), timeout=15)
-            _LOGGER.debug(f"Response received or timeout for {entity.entity_id} at {datetime.now()}")
+            LOGGER.debug(f"Response received or timeout for {entity.entity_id} at {datetime.now()}")
             return True
         except asyncio.TimeoutError:
-            _LOGGER.error(f"No response received for {entity.entity_id} within the timeout period.")
+            LOGGER.error(f"No response received for {entity.entity_id} within the timeout period.")
             self.hass.loop.call_soon_threadsafe(entity.revert_state)
             return False
         finally:
@@ -107,19 +98,19 @@ class MQTTHandler:
         if not entity:
             return
 
-        _LOGGER.info(f"Received response for topic {msg.topic} at {datetime.now()}: {msg.payload}")
+        LOGGER.info(f"Received response for topic {msg.topic} at {datetime.now()}: {msg.payload}")
         try:
             response = json.loads(msg.payload)
             
             if response.get('status') == 'success':
-                _LOGGER.info(f"Successfully updated state of entity {entity.entity_id}.")
+                LOGGER.info(f"Successfully updated state of entity {entity.entity_id}.")
                 # Keep the current state as it was already optimistically updated
                 self.hass.loop.call_soon_threadsafe(entity.async_write_ha_state)
             else:
-                _LOGGER.error(f"Failed to update state for {entity.entity_id}, reverting state.")
+                LOGGER.error(f"Failed to update state for {entity.entity_id}, reverting state.")
                 self.hass.loop.call_soon_threadsafe(entity.revert_state)
         except json.JSONDecodeError:
-            _LOGGER.error(f"Failed to decode JSON response for {entity.entity_id}: {msg.payload}")
+            LOGGER.error(f"Failed to decode JSON response for {entity.entity_id}: {msg.payload}")
             self.hass.loop.call_soon_threadsafe(entity.revert_state)
         finally:
             # Unsubscribe and clear the event
@@ -134,15 +125,15 @@ class MQTTHandler:
     async def send_multiple_updates(self, dongle_id, payload_dict, entity):
         """Handle multiple settings updates."""
         now = datetime.now()
-        _LOGGER.info(f"Sending multiple updates for {entity.entity_id} with payload {payload_dict}")
+        LOGGER.info(f"Sending multiple updates for {entity.entity_id} with payload {payload_dict}")
 
         if self.last_time_update and (now - self.last_time_update).total_seconds() < 1:
-            _LOGGER.info(f"Rate limit hit for {entity.entity_id}. Dropping update.")
+            LOGGER.info(f"Rate limit hit for {entity.entity_id}. Dropping update.")
             return
 
         async with self._lock:
             if self._processing:
-                _LOGGER.info(f"Already processing an update for {entity.entity_id}.")
+                LOGGER.info(f"Already processing an update for {entity.entity_id}.")
                 return
 
             self._processing = True
@@ -178,7 +169,7 @@ class MQTTHandler:
             "from": "homeassistant"
         })
         
-        _LOGGER.info(f"Sending multiple MQTT updates: {topic} - {payload} at {datetime.now()}")
+        LOGGER.info(f"Sending multiple MQTT updates: {topic} - {payload} at {datetime.now()}")
         await mqtt.async_publish(self.hass, topic, payload)
 
         self.response_received_event.clear()
@@ -188,9 +179,9 @@ class MQTTHandler:
 
         try:
             await asyncio.wait_for(self.response_received_event.wait(), timeout=15)
-            _LOGGER.debug(f"Response received or timeout for {entity.entity_id} at {datetime.now()}")
+            LOGGER.debug(f"Response received or timeout for {entity.entity_id} at {datetime.now()}")
             return True
         except asyncio.TimeoutError:
-            _LOGGER.error(f"No response received for {entity.entity_id} within the timeout period.")
+            LOGGER.error(f"No response received for {entity.entity_id} within the timeout period.")
             self.hass.loop.call_soon_threadsafe(entity.revert_state)
             return False

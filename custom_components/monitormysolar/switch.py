@@ -1,17 +1,24 @@
 import logging
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import callback
+from homeassistant.helpers.event import (
+    async_track_state_change_event,
+)
+from homeassistant.const import (
+    STATE_UNKNOWN,
+)
 from .const import DOMAIN, ENTITIES, FIRMWARE_CODES
-from . import MonitorMySolarEntry
+from .coordinator import MonitorMySolarEntry
+from .entity import MonitorMySolarEntity
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    inverter_brand = entry.data.get("inverter_brand")
-    dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
+async def async_setup_entry(hass, entry: MonitorMySolarEntry, async_add_entities):
+    coordinator = entry.runtime_data
+    inverter_brand = coordinator.inverter_brand
+    firmware_code = coordinator.firmware_code
     brand_entities = ENTITIES.get(inverter_brand, {})
     switch_config = brand_entities.get("switch", {})
-    firmware_code = entry.data.get("firmware_code")
     device_type = FIRMWARE_CODES.get(firmware_code, {}).get("Device_Type", "")
 
     entities = []
@@ -21,30 +28,32 @@ async def async_setup_entry(hass, entry, async_add_entities):
             if not allowed_device_types or device_type in allowed_device_types:
                 try:
                     entities.append(
-                        InverterSwitch(switch, hass, entry, dongle_id, bank_name)
+                        InverterSwitch(switch, hass, entry, bank_name)
                     )
                 except Exception as e:
                     _LOGGER.error(f"Error setting up switch {switch}: {e}")
 
     async_add_entities(entities, True)
 
-class InverterSwitch(SwitchEntity):
-    def __init__(self, entity_info, hass, entry: MonitorMySolarEntry, dongle_id, bank_name):
+class InverterSwitch(MonitorMySolarEntity, SwitchEntity):
+    def __init__(self, entity_info, hass, entry: MonitorMySolarEntry, bank_name):
         """Initialize the switch."""
         _LOGGER.debug(f"Initializing switch with info: {entity_info}")
+        self.coordinator = entry.runtime_data
         self.entity_info = entity_info
         self._name = entity_info["name"]
         self._unique_id = f"{entry.entry_id}_{entity_info['unique_id']}".lower()
         self._state = False
-        self._dongle_id = dongle_id.lower().replace("-", "_")
-        self._device_id = dongle_id.lower().replace("-", "_")
+        self._dongle_id = self.coordinator.dongle_id
+        self._device_id = self.coordinator.dongle_id
         self._entity_type = entity_info["unique_id"]
         self._bank_name = bank_name
         self.entity_id = f"switch.{self._device_id}_{self._entity_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
         self._previous_state = None
-        self.coordinator = entry.runtime_data
+
+        super().__init__(self.coordinator)
 
     @property
     def name(self):
@@ -105,23 +114,14 @@ class InverterSwitch(SwitchEntity):
             self.async_write_ha_state()
 
     @callback
-    def _handle_event(self, event):
-        """Handle the event."""
-       # _LOGGER.debug(f"Handling event for switch {self.entity_id}: {event.data}")
-        event_entity_id = event.data.get("entity").lower().replace("-", "_")
-        if event_entity_id == self.entity_id:
-            value = event.data.get("value")
-            #_LOGGER.debug(f"Received event for switch {self.entity_id}: {value}")
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+
+        # This method is called by your DataUpdateCoordinator when a successful update runs.
+        if self.entity_id in self.coordinator.entities:
+            value = self.coordinator.entities[self.entity_id]
             if value is not None:
                 self._state = bool(value)
                 #_LOGGER.debug(f"Switch {self.entity_id} state updated to {value}")
                 # Schedule state update on the main thread
                 self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
-
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-        _LOGGER.debug(f"Switch {self.entity_id} added to hass")
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_switch_updated", self._handle_event)
-        )
-        _LOGGER.debug(f"Switch {self.entity_id} subscribed to event")

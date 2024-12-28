@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
-import logging
 import json
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.core import HomeAssistant, callback
-from .const import DOMAIN, ENTITIES, FIRMWARE_CODES
+from typing import cast
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
 from homeassistant.const import (
     CONF_MODE,
     PERCENTAGE,
@@ -13,20 +15,29 @@ from homeassistant.const import (
     UnitOfFrequency,
     UnitOfPower,
     UnitOfTemperature,
+    STATE_UNKNOWN,
 )
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
+from homeassistant.core import (
+    Event,
+    EventStateChangedData,
+    HomeAssistant,
+    State,
+    callback,
 )
+from homeassistant.helpers.event import (
+    async_track_state_change_event,
+)
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util.unit_system import METRIC_SYSTEM, US_CUSTOMARY_SYSTEM
 
-_LOGGER = logging.getLogger(__name__)
+from .const import DOMAIN, ENTITIES, FIRMWARE_CODES, LOGGER
+from .coordinator import MonitorMySolarEntry
+from .entity import MonitorMySolarEntity
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    inverter_brand = entry.data.get("inverter_brand")
-    dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
-    firmware_code = entry.data.get("firmware_code")
+async def async_setup_entry(hass, entry: MonitorMySolarEntry, async_add_entities):
+    coordinator = entry.runtime_data
+    inverter_brand = coordinator.inverter_brand
+    firmware_code = coordinator.firmware_code
 
     brand_entities = ENTITIES.get(inverter_brand, {})
     sensors_config = brand_entities.get("sensor", {})
@@ -42,57 +53,61 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     # Check if the sensor is of type 'status' to create the StatusSensor class
                     if bank_name == "status":
                         entities.append(
-                            StatusSensor(sensor, hass, entry, dongle_id, bank_name),
+                            StatusSensor(sensor, hass, entry, bank_name),
                         )
                     elif bank_name == "powerflow":
                         entities.append(
-                            PowerFlowSensor(sensor, hass, entry, dongle_id, bank_name)
+                            PowerFlowSensor(sensor, hass, entry, bank_name)
                         )
                     elif bank_name == "timestamp":
                         entities.append(
-                            BankUpdateSensor(sensor, hass, entry, dongle_id, bank_name)
+                            BankUpdateSensor(sensor, hass, entry, bank_name)
                         )
                     elif bank_name == "warning":
                         entities.append(
-                            FaultWarningSensor(sensor, hass, entry, dongle_id, bank_name)
+                            FaultWarningSensor(sensor, hass, entry, bank_name)
                         )
                     elif bank_name == "fault":
                         entities.append(
-                            FaultWarningSensor(sensor, hass, entry, dongle_id, bank_name)
+                            FaultWarningSensor(sensor, hass, entry, bank_name)
                         )
                     elif bank_name == "calculated":
                         entities.append(
-                            CalculatedSensor(sensor, hass, entry, dongle_id, bank_name)
+                            CalculatedSensor(sensor, hass, entry, bank_name)
                         )
                     elif bank_name == "temperature":
                         entities.append(
-                            TemperatureSensor(sensor, hass, entry, dongle_id, bank_name)
+                            TemperatureSensor(sensor, hass, entry, bank_name)
                         )
                     else:
                         entities.append(
-                            InverterSensor(sensor, hass, entry, dongle_id, bank_name)
+                            InverterSensor(sensor, hass, entry, bank_name)
                         )
                 except Exception as e:
-                    _LOGGER.error(f"Error setting up sensor {sensor}: {e}")
+                    LOGGER.error(f"Error setting up sensor {sensor}: {e}")
 
-    async_add_entities(entities, True)
+    async_add_entities(entities)
 
 
-class InverterSensor(SensorEntity):
-    def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
+class InverterSensor(MonitorMySolarEntity, SensorEntity):
+    def __init__(self, sensor_info, hass, entry, bank_name):
         """Initialize the sensor."""
-        _LOGGER.debug(f"Initializing sensor with info: {sensor_info}")
+        LOGGER.debug(f"Initializing sensor with info: {sensor_info}")
+        self.coordinator = entry.runtime_data
         self.sensor_info = sensor_info
         self._name = sensor_info["name"]
         self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}".lower()
         self._state = None
-        self._dongle_id = dongle_id.lower().replace("-", "_")
-        self._device_id = dongle_id.lower().replace("-", "_")
+        self._dongle_id = self.coordinator.dongle_id
+        self._device_id = self.coordinator.dongle_id
         self._sensor_type = sensor_info["unique_id"]
         self._bank_name = bank_name
-        self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
+        self.entity_id: str = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
+        LOGGER.debug(f"Initialized sensor {self.entity_id}")
+
+        super().__init__(self.coordinator)
 
     @property
     def name(self):
@@ -134,12 +149,12 @@ class InverterSensor(SensorEntity):
         }
 
     @callback
-    def _handle_event(self, event):
-        """Handle the event."""
-        _LOGGER.debug(f"Handling event for sensor {self.entity_id}: {event.data}")
-        event_entity_id = event.data.get("entity").lower().replace("-", "_")
-        if event_entity_id == self.entity_id:
-            value = event.data.get("value")
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+
+        # This method is called by your DataUpdateCoordinator when a successful update runs.
+        if self.entity_id in self.coordinator.entities:
+            value = self.coordinator.entities[self.entity_id]
             if value is not None:
                 if self._sensor_type == "RunningTime" and isinstance(value, (float, int)):
                     # Convert seconds to HH:MM:SS format
@@ -151,29 +166,23 @@ class InverterSensor(SensorEntity):
                     self._state = (
                         round(value, 2) if isinstance(value, (float, int)) else value
                     )
-                _LOGGER.debug(f"Sensor {self.entity_id} state updated to {self._state}")
                 self.async_write_ha_state()
-
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-        _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
-        )
-        _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")
+        else:
+            LOGGER.warning(f"entity {self.entity_id} key not found")
+        
 
 
-
-class StatusSensor(SensorEntity):
-    def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
+class StatusSensor(MonitorMySolarEntity, SensorEntity):
+    def __init__(self, sensor_info, hass, entry, bank_name):
         """Initialize the sensor."""
-        _LOGGER.debug(f"Initializing sensor with info: {sensor_info}")
+        LOGGER.debug(f"Initializing sensor with info: {sensor_info}")
+        self.coordinator = entry.runtime_data
         self.sensor_info = sensor_info
         self._name = sensor_info["name"]
         self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}".lower()
         self._state = None
-        self._dongle_id = dongle_id.lower().replace("-", "_")
-        self._device_id = dongle_id.lower().replace("-", "_")
+        self._dongle_id = self.coordinator.dongle_id
+        self._device_id = self.coordinator.dongle_id
         self._sensor_type = sensor_info["unique_id"]
         self._bank_name = bank_name
         self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
@@ -183,6 +192,8 @@ class StatusSensor(SensorEntity):
 
         # Initialize attributes with default values
         self._attributes = {attr: "unknown" for attr in self._expected_attributes}
+
+        super().__init__(self.coordinator)
 
     @property
     def name(self):
@@ -220,47 +231,33 @@ class StatusSensor(SensorEntity):
         }
 
     @callback
-    def _handle_event(self, event):
-        """Handle the event."""
-        _LOGGER.debug(f"Handling event for sensor {self.entity_id}: {event.data}")
-        event_entity_id = event.data.get("entity").lower().replace("-", "_")
-        if event_entity_id == self.entity_id:
-            value = event.data.get("value")
-            _LOGGER.debug(f'Value received: {value}')
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+        if self.entity_id in self.coordinator.entities:
+            value = self.coordinator.entities[self.entity_id]
             if isinstance(value, dict):
                 # Extract the 'uptime' for the sensor's state
                 self._state = value.get("uptime")
-                _LOGGER.debug(f'State updated to: {self._state}')
+                LOGGER.debug(f'State updated to: {self._state}')
 
                 # Update the sensor's attributes based on the expected attributes list
                 for attr in self._expected_attributes:
                     self._attributes[attr] = value.get(attr, "unknown")
 
-                _LOGGER.debug(f'Attributes updated to: {self._attributes}')
+                LOGGER.debug(f'Attributes updated to: {self._attributes}')
 
                 self.async_write_ha_state()
 
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-        _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_uptime_sensor_updated", self._handle_event)
-        )
-        _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")
-
-
-
-
-
-class PowerFlowSensor(SensorEntity):
-    def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
+class PowerFlowSensor(MonitorMySolarEntity, SensorEntity):
+    def __init__(self, sensor_info, hass, entry, bank_name):
         """Initialize the Power Flow sensor."""
+        self.coordinator = entry.runtime_data
         self.sensor_info = sensor_info
         self._name = sensor_info["name"]
         self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}".lower()
         self._state = None
-        self._dongle_id = dongle_id.lower().replace("-", "_")
-        self._device_id = dongle_id.lower().replace("-", "_")
+        self._dongle_id = self.coordinator.dongle_id
+        self._device_id = self.coordinator.dongle_id
         self._sensor_type = sensor_info["unique_id"]
         self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
         self.hass = hass
@@ -269,6 +266,8 @@ class PowerFlowSensor(SensorEntity):
         self._attribute2 = sensor_info.get("attribute2")
         self._value1 = 0
         self._value2 = 0
+
+        super().__init__(self.coordinator)
 
     @property
     def name(self):
@@ -311,15 +310,22 @@ class PowerFlowSensor(SensorEntity):
         }
 
     @callback
-    def _handle_event(self, event):
-        """Handle the event."""
-        event_entity_id = event.data.get("entity").lower().replace("-", "_")
-        value = event.data.get("value")
-
-        if event_entity_id.endswith(self._attribute1.lower()):
-            self._value1 = float(value)
-        elif event_entity_id.endswith(self._attribute2.lower()):
-            self._value2 = float(value)
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+        attr1_entity_id = f"sensor.{self.coordinator.dongle_id}_{self._attribute1.lower()}"
+        attr2_entity_id = f"sensor.{self.coordinator.dongle_id}_{self._attribute2.lower()}"
+        if attr1_entity_id in self.coordinator.entities:
+            value = self.coordinator.entities[attr1_entity_id]
+            if value is not None:
+                self._value1 = float(value)
+        if attr2_entity_id in self.coordinator.entities:
+            value = self.coordinator.entities[attr2_entity_id]
+            if value is not None:
+                self._value1 = float(value)
+                # if event_entity_id.endswith(self._attribute1.lower()):
+                #     self._value1 = float(value)
+                # elif event_entity_id.endswith(self._attribute2.lower()):
+                #     self._value2 = float(value)
 
         # Calculate the flow value
         if self._value1 > 0:
@@ -329,30 +335,24 @@ class PowerFlowSensor(SensorEntity):
 
         self.async_write_ha_state()
 
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
-        )
-        _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")
-
-
-
-class CombinedSensor(SensorEntity):
+class CombinedSensor(MonitorMySolarEntity, SensorEntity):
     def __init__(self, sensor_info, hass, entry, dongle_id):
         """Initialize the Combined sensor."""
+        self.coordinator = entry.runtime_data
         self.sensor_info = sensor_info
         self._name = sensor_info["name"]
         self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}".lower()
         self._state = None
-        self._dongle_id = dongle_id.lower().replace("-", "_")
-        self._device_id = dongle_id.lower().replace("-", "_")
+        self._dongle_id = self.coordinator.dongle_id
+        self._device_id = self.coordinator.dongle_id
         self._sensor_type = sensor_info["unique_id"]
         self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
         self._attributes = sensor_info.get("attributes", [])
         self._sensor_values = {attr: 0.0 for attr in self._attributes}  # Store individual sensor values
+
+        super().__init__(self.coordinator)
 
     @property
     def name(self):
@@ -391,35 +391,31 @@ class CombinedSensor(SensorEntity):
         }
 
     @callback
-    def _handle_event(self, event):
-        """Handle the event."""
-        event_entity_id = event.data.get("entity").lower().replace("-", "_")
-        value = event.data.get("value")
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+        LOGGER.warning(f"CombinedSensor id: {self.entity_id}")
+        LOGGER.warning(f"sensor_values: {self._sensor_values}")
+        if self.entity_id in self.coordinator.entities:
+            value = self.coordinator.entities[self.entity_id]
+            if value is not None:
 
-        if event_entity_id in self._sensor_values:
-            self._sensor_values[event_entity_id] = float(value)
+                if self.entity_id in self._sensor_values:
+                    self._sensor_values[self.entity_id] = float(value)
 
-            # Example operation: Summing all sensor values
-            self._state = sum(self._sensor_values.values())
-            self.async_write_ha_state()
+                    # Example operation: Summing all sensor values
+                    self._state = sum(self._sensor_values.values())
+                    self.async_write_ha_state()
 
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-        _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
-        )
-        _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")
-
-class BankUpdateSensor(SensorEntity):
-    def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
+class BankUpdateSensor(MonitorMySolarEntity, SensorEntity):
+    def __init__(self, sensor_info, hass, entry, bank_name):
         """Initialize the Bank Update sensor."""
+        self.coordinator = entry.runtime_data
         self.sensor_info = sensor_info
         self._name = sensor_info["name"]
         self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}".lower()
         self._state = None
-        self._dongle_id = dongle_id.lower().replace("-", "_")
-        self._device_id = dongle_id.lower().replace("-", "_")
+        self._dongle_id = self.coordinator.dongle_id
+        self._device_id = self.coordinator.dongle_id
         self._sensor_type = sensor_info["unique_id"]
         self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
         self.hass = hass
@@ -427,6 +423,8 @@ class BankUpdateSensor(SensorEntity):
 
         # Initialize attributes with None values
         self._attributes = {attr: None for attr in sensor_info.get("attributes", [])}
+
+        super().__init__(self.coordinator)
 
     @property
     def name(self):
@@ -461,11 +459,11 @@ class BankUpdateSensor(SensorEntity):
     def _handle_bank_update(self, event):
         """Handle bank update events."""
         bank_name = event.data.get("bank_name")
-        _LOGGER.debug(f"Update Event Called for: {bank_name}")
+        LOGGER.debug(f"Update Event Called for: {bank_name}")
         if bank_name:
             current_time = datetime.now().isoformat()
             attr_name = f"{bank_name}_last_update"
-            _LOGGER.debug(f"Updating Attribute name: {attr_name}")
+            LOGGER.debug(f"Updating Attribute name: {attr_name}")
 
             if attr_name in self._attributes:
                 self._attributes[attr_name] = current_time
@@ -474,20 +472,21 @@ class BankUpdateSensor(SensorEntity):
 
     async def async_added_to_hass(self):
         """Subscribe to events when added to hass."""
-        _LOGGER.debug(f"Subscribing to bank update event for {self.entity_id}")
+        LOGGER.debug(f"Subscribing to bank update event for {self.entity_id}")
         self.async_on_remove(
             self.hass.bus.async_listen(f"{DOMAIN}_bank_updated", self._handle_bank_update)
         )
 
-class FaultWarningSensor(SensorEntity):
-    def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
+class FaultWarningSensor(MonitorMySolarEntity, SensorEntity):
+    def __init__(self, sensor_info, hass, entry, bank_name):
         """Initialize the fault/warning sensor."""
+        self.coordinator = entry.runtime_data
         self.sensor_info = sensor_info
         self._name = sensor_info["name"]
         self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}".lower()
         self._state = None
-        self._dongle_id = dongle_id.lower().replace("-", "_")
-        self._device_id = dongle_id.lower().replace("-", "_")
+        self._dongle_id = self.coordinator.dongle_id
+        self._device_id = self.coordinator.dongle_id
         self._sensor_type = sensor_info["unique_id"]
         self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
         self.hass = hass
@@ -497,6 +496,8 @@ class FaultWarningSensor(SensorEntity):
         self._history = []
         self._state = "No Fault" if "fault" in sensor_info["unique_id"] else "No Warning"
         self._value = 0
+
+        super().__init__(self.coordinator)
 
     @property
     def name(self):
@@ -528,19 +529,18 @@ class FaultWarningSensor(SensorEntity):
             "name": f"Inverter {self._dongle_id}",
             "manufacturer": f"{self._manufacturer}",
         }
+   
+
     @callback
-    def _handle_event(self, event):
-        """Handle the event."""
-        _LOGGER.debug(f"Sensor {self.entity_id} event called")
-        event_entity_id = event.data.get("entity").lower().replace("-", "_")
-        _LOGGER.debug(f"Event entity ID: {event_entity_id}")
-        if event_entity_id == self.entity_id:
-            value_data = event.data.get("value", {})
-            _LOGGER.debug(f"Value data: {value_data}")
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+        if self.entity_id in self.coordinator.entities:
+            value_data = self.coordinator.entities[self.entity_id]
+            LOGGER.debug(f"Value data: {value_data}")
             if isinstance(value_data, dict):
                 self._value = value_data.get("value", 0)
                 description = value_data.get("description")
-                _LOGGER.debug(f"Description: {description}")
+                LOGGER.debug(f"Description: {description}")
 
                 if description:  # New fault/warning
                     self._state = description
@@ -559,7 +559,7 @@ class FaultWarningSensor(SensorEntity):
                             "start_time": start_time,
                             "end_time": end_time
                         })
-                    _LOGGER.debug(f"History: {self._history}")
+                    LOGGER.debug(f"History: {self._history}")
                 else:  # Reset state
                     self._state = "No Fault" if "fault" in self._sensor_type else "No Warning"
 
@@ -569,19 +569,10 @@ class FaultWarningSensor(SensorEntity):
 
             self.async_write_ha_state()
 
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-        _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_warning_updated", self._handle_event)
-        )
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_fault_updated", self._handle_event)
-        )
-
-class CalculatedSensor(SensorEntity):
-    def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
+class CalculatedSensor(MonitorMySolarEntity, SensorEntity):
+    def __init__(self, sensor_info, hass, entry, bank_name):
         """Initialize the calculated sensor."""
+        self.coordinator = entry.runtime_data
         self.sensor_info = sensor_info
         self._name = sensor_info["name"]
         self.entry = entry  # Store the entry for use in event handling
@@ -589,8 +580,8 @@ class CalculatedSensor(SensorEntity):
         self._state = None
 
         # Store the formatted IDs
-        self._dongle_id = dongle_id.lower().replace("-", "_")  # For device_info
-        self._formatted_id = dongle_id.lower().replace("-", "_").replace(":", "_")   # For sensor entity matching
+        self._dongle_id = self.coordinator.dongle_id  # For device_info
+        self._formatted_id = self.coordinator.dongle_id.replace(":", "_")   # For sensor entity matching
 
         self._sensor_type = sensor_info["unique_id"]
         self.entity_id = f"sensor.{self._formatted_id}_{self._sensor_type.lower()}"
@@ -603,6 +594,8 @@ class CalculatedSensor(SensorEntity):
         self._operation = self._calculation.get("operation")
         self._source_sensors = self._calculation.get("sensors", [])
         self._sensor_values = {sensor: 0 for sensor in self._source_sensors}
+
+        super().__init__(self.coordinator)
 
     @property
     def name(self):
@@ -690,54 +683,46 @@ class CalculatedSensor(SensorEntity):
                 }
 
     @callback
-    def _handle_event(self, event):
-        """Handle the event."""
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
         # Get our source sensor IDs using the entry ID format
         source_entity_ids = {
             f"sensor.{self._formatted_id}_{sensor.lower()}": sensor
             for sensor in self._source_sensors
         }
+        for entity_id in source_entity_ids.keys():
+            # Check if this event matches one of our source sensors
+             if entity_id in self.coordinator.entities:
+                value = self.coordinator.entities[entity_id]
+                if value is not None:
+                    sensor_name = source_entity_ids[entity_id]
+                    self._sensor_values[sensor_name] = float(value)
 
-        # Get the event entity ID
-        event_entity_id = event.data.get("entity", "").lower().replace("-", "_").replace(":", "_")
-        value = event.data.get("value", 0)
+                    # LOGGER.warning(
+                    #     f"Updated {sensor_name} value to {value} for calculated sensor {self.entity_id}"
+                    # )
 
-        _LOGGER.warning(f"Event entity: {event_entity_id}")
-        _LOGGER.warning(f"Watching source sensors: {list(source_entity_ids.keys())}")
+                    self._calculate_state()
+                    self.async_write_ha_state()
 
-        # Check if this event matches one of our source sensors
-        if event_entity_id in source_entity_ids:
-            sensor_name = source_entity_ids[event_entity_id]
-            self._sensor_values[sensor_name] = float(value)
-
-            _LOGGER.warning(
-                f"Updated {sensor_name} value to {value} for calculated sensor {self.entity_id}"
-            )
-
-            self._calculate_state()
-            self.async_write_ha_state()
-
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
-        )
-
-class TemperatureSensor(SensorEntity):
-    def __init__(self, sensor_info, hass, entry, dongle_id, bank_name):
+class TemperatureSensor(MonitorMySolarEntity, SensorEntity):
+    def __init__(self, sensor_info, hass, entry, bank_name):
         """Initialize the temperature sensor."""
-        _LOGGER.debug(f"Initializing sensor with info: {sensor_info}")
+        LOGGER.debug(f"Initializing sensor with info: {sensor_info}")
+        self.coordinator = entry.runtime_data
         self.sensor_info = sensor_info
         self._name = sensor_info["name"]
         self._unique_id = f"{entry.entry_id}_{sensor_info['unique_id']}".lower()
         self._state = None
-        self._dongle_id = dongle_id.lower().replace("-", "_")
-        self._device_id = dongle_id.lower().replace("-", "_")
+        self._dongle_id = self.coordinator.dongle_id
+        self._device_id = self.coordinator.dongle_id
         self._sensor_type = sensor_info["unique_id"]
         self._bank_name = bank_name
         self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
+
+        super().__init__(self.coordinator)
 
     @property
     def name(self):
@@ -782,12 +767,10 @@ class TemperatureSensor(SensorEntity):
         }
 
     @callback
-    def _handle_event(self, event):
-        """Handle the event."""
-        _LOGGER.debug(f"Handling event for sensor {self.entity_id}: {event.data}")
-        event_entity_id = event.data.get("entity").lower().replace("-", "_")
-        if event_entity_id == self.entity_id:
-            value = event.data.get("value")
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+        if self.entity_id in self.coordinator.entities:
+            value = self.coordinator.entities[self.entity_id]
             if value is not None:
                 # Default state to value sent in.
                 self._state = (
@@ -806,13 +789,5 @@ class TemperatureSensor(SensorEntity):
                         self._state = (
                             round( ((value)-32/(9/5)), 2 ) if isinstance(value, (float, int)) else value
                         )
-                _LOGGER.debug(f"Sensor {self.entity_id} state updated to {self._state}")
+                LOGGER.debug(f"Sensor {self.entity_id} state updated to {self._state}")
                 self.async_write_ha_state()
-
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-        _LOGGER.debug(f"Sensor {self.entity_id} added to hass")
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_sensor_updated", self._handle_event)
-        )
-        _LOGGER.debug(f"Sensor {self.entity_id} subscribed to event")

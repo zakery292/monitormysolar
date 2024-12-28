@@ -1,14 +1,18 @@
-import logging
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import callback
-from .const import DOMAIN, ENTITIES
-from . import MonitorMySolarEntry
+from homeassistant.helpers.event import (
+    async_track_state_change_event,
+)
+from homeassistant.const import (
+    STATE_UNKNOWN,
+)
+from .const import DOMAIN, ENTITIES, LOGGER
+from .coordinator import MonitorMySolarEntry
+from .entity import MonitorMySolarEntity
 
-_LOGGER = logging.getLogger(__name__)
-
-async def async_setup_entry(hass, entry, async_add_entities):
-    inverter_brand = entry.data.get("inverter_brand")
-    dongle_id = entry.data.get("dongle_id").lower().replace("-", "_")
+async def async_setup_entry(hass, entry: MonitorMySolarEntry, async_add_entities):
+    coordinator = entry.runtime_data
+    inverter_brand = coordinator.inverter_brand
     brand_entities = ENTITIES.get(inverter_brand, {})
     select_config = brand_entities.get("select", {})
 
@@ -17,30 +21,32 @@ async def async_setup_entry(hass, entry, async_add_entities):
         for select in selects:
             try:
                 if bank_name == "holdbank6":
-                    entities.append(QuickChargeDurationSelect(select, hass, entry, dongle_id, bank_name))
+                    entities.append(QuickChargeDurationSelect(select, hass, entry, bank_name))
                 else:
-                    entities.append(InverterSelect(select, hass, entry, dongle_id))
+                    entities.append(InverterSelect(select, hass, entry))
             except Exception as e:
-                _LOGGER.error(f"Error setting up select {select}: {e}")
+                LOGGER.error(f"Error setting up select {select}: {e}")
 
     async_add_entities(entities, True)
 
-class InverterSelect(SelectEntity):
-    def __init__(self, entity_info, hass, entry: MonitorMySolarEntry, dongle_id):
+class InverterSelect(MonitorMySolarEntity, SelectEntity):
+    def __init__(self, entity_info, hass, entry: MonitorMySolarEntry):
         """Initialize the select entity."""
-        _LOGGER.debug(f"Initializing select with info: {entity_info}")
+        LOGGER.debug(f"Initializing select with info: {entity_info}")
+        self.coordinator = entry.runtime_data
         self.entity_info = entity_info
         self._name = entity_info["name"]
         self._unique_id = f"{entry.entry_id}_{entity_info['unique_id']}".lower()
         self._state = None
-        self._dongle_id = dongle_id.lower().replace("-", "_")
-        self._device_id = dongle_id.lower().replace("-", "_")
+        self._dongle_id = self.coordinator.dongle_id
+        self._device_id = self.coordinator.dongle_id
         self._entity_type = entity_info["unique_id"]
         self.entity_id = f"select.{self._device_id}_{self._entity_type.lower()}"
         self.hass = hass
         self._options = entity_info["options"]
         self._manufacturer = entry.data.get("inverter_brand")
-        self.coordinator = entry.runtime_data
+
+        super().__init__(self.coordinator)
 
     @property
     def name(self):
@@ -68,14 +74,14 @@ class InverterSelect(SelectEntity):
 
     async def async_select_option(self, option):
         """Update the select option."""
-        _LOGGER.info(f"Setting select option for {self.entity_id} to {option}")
+        LOGGER.info(f"Setting select option for {self.entity_id} to {option}")
         self._state = option
         self.async_write_ha_state
 
 
 
         bit_value = self._options.index(option)
-        _LOGGER.info(f"Setting Select value for {self.entity_id} to {option}")
+        LOGGER.info(f"Setting Select value for {self.entity_id} to {option}")
         await self.coordinator.mqtt_handler.send_update(
             self._dongle_id.replace("_", "-"),
             self.entity_info["unique_id"],
@@ -85,51 +91,44 @@ class InverterSelect(SelectEntity):
 
     def revert_state(self):
         """Revert to the previous state."""
-        _LOGGER.info(f"Reverting state for {self.entity_id} to {self._state}")
+        LOGGER.info(f"Reverting state for {self.entity_id} to {self._state}")
         # Schedule state revert on the main thread
         self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
     @callback
-    def _handle_event(self, event):
-        """Handle the event."""
-        _LOGGER.debug(f"Handling event for select {self.entity_id}: {event.data}")
-        event_entity_id = event.data.get("entity").lower().replace("-", "_")
-        if event_entity_id == self.entity_id:
-            value = event.data.get("value")
-            _LOGGER.debug(f"Received event for select {self.entity_id}: {value}")
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
+
+        # This method is called by your DataUpdateCoordinator when a successful update runs.
+        if self.entity_id in self.coordinator.entities:
+            value = self.coordinator.entities[self.entity_id]
             if value is not None:
                 self._state = (
                     self._options[value]
                     if isinstance(value, int) and value < len(self._options)
                     else value
                 )
-                _LOGGER.debug(f"Select {self.entity_id} state updated to {self._state}")
                 # Schedule state update on the main thread
                 self.hass.loop.call_soon_threadsafe(self.async_write_ha_state)
 
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-       # _LOGGER.debug(f"Select {self.entity_id} added to hass")
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_select_updated", self._handle_event)
-        )
-        #_LOGGER.debug(f"Select {self.entity_id} subscribed to event")
 
-
-class QuickChargeDurationSelect(SelectEntity):
-    def __init__(self, entity_info, hass, entry, dongle_id, bank_name):
+class QuickChargeDurationSelect(MonitorMySolarEntity, SelectEntity):
+    def __init__(self, entity_info, hass, entry, bank_name):
         """Initialize the select entity."""
+        self.coordinator = entry.runtime_data
         self.entity_info = entity_info
         self._attr_name = entity_info["name"]
         self._attr_unique_id = f"{entry.entry_id}_{entity_info['unique_id']}".lower()
         self._attr_options = entity_info["options"]
         self._attr_current_option = self._attr_options[0]  # Default to first option
-        self._dongle_id = dongle_id.lower().replace("-", "_")
+        self._dongle_id = self.coordinator.dongle_id
         self._entity_type = entity_info["unique_id"]
         self.entity_id = f"select.{self._dongle_id}_{self._entity_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
         self._additional_payload = entity_info.get("additional_payload")
+
+        super().__init__(self.coordinator)
 
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
@@ -157,20 +156,16 @@ class QuickChargeDurationSelect(SelectEntity):
             self._attr_current_option = option
             self.async_write_ha_state()
         else:
-            _LOGGER.error("MQTT Handler is not initialized")
+            LOGGER.error("MQTT Handler is not initialized")
 
     @callback
-    def _handle_event(self, event):
-        """Handle the event."""
-        event_entity_id = event.data.get("entity").lower().replace("-", "_")
-        if event_entity_id == self.entity_id:
-            value = event.data.get("value")
-            if value in self._attr_options:
-                self._attr_current_option = value
-                self.async_write_ha_state()
+    def _handle_coordinator_update(self) -> None:
+        """Update sensor with latest data from coordinator."""
 
-    async def async_added_to_hass(self):
-        """Subscribe to events when added to hass."""
-        self.async_on_remove(
-            self.hass.bus.async_listen(f"{DOMAIN}_select_updated", self._handle_event)
-        )
+        # This method is called by your DataUpdateCoordinator when a successful update runs.
+        if self.entity_id in self.coordinator.entities:
+            value = self.coordinator.entities[self.entity_id]
+            if value is not None:
+                if value in self._attr_options:
+                    self._attr_current_option = value
+                    self.async_write_ha_state()

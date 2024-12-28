@@ -315,17 +315,13 @@ class PowerFlowSensor(MonitorMySolarEntity, SensorEntity):
         attr1_entity_id = f"sensor.{self.coordinator.dongle_id}_{self._attribute1.lower()}"
         attr2_entity_id = f"sensor.{self.coordinator.dongle_id}_{self._attribute2.lower()}"
         if attr1_entity_id in self.coordinator.entities:
-            value = self.coordinator.entities[attr1_entity_id]
-            if value is not None:
-                self._value1 = float(value)
+            attr1_value = self.coordinator.entities[attr1_entity_id]
+            if attr1_value is not None:
+                self._value1 = float(attr1_value)
         if attr2_entity_id in self.coordinator.entities:
-            value = self.coordinator.entities[attr2_entity_id]
-            if value is not None:
-                self._value1 = float(value)
-                # if event_entity_id.endswith(self._attribute1.lower()):
-                #     self._value1 = float(value)
-                # elif event_entity_id.endswith(self._attribute2.lower()):
-                #     self._value2 = float(value)
+            attr2_value = self.coordinator.entities[attr2_entity_id]
+            if attr2_value is not None:
+                self._value2 = float(attr2_value)
 
         # Calculate the flow value
         if self._value1 > 0:

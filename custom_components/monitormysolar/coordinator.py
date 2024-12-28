@@ -102,7 +102,7 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
         if not brand_entities:
             LOGGER.error(f"No entities defined for inverter brand: {self.inverter_brand}")
             return False
-    
+
         for entityTypeName, entityTypes in brand_entities.items():
             for typeName, entities in entityTypes.items():
                 for entity in entities:
@@ -123,11 +123,11 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
             await self.hass.config_entries.async_forward_entry_setups(self.entry, PLATFORMS)
         self.entry.async_on_unload(self.entry.add_update_listener(self.config_entry_update_listener))
         return await mqtt.async_subscribe(self.hass, f"{self._dongle_id}/#", self._async_handle_mqtt_message)
-    
+
     async def _async_update_data(self) -> None:
         """Update data."""
         return self.data
-    
+
     async def config_entry_update_listener(hass: HomeAssistant, entry: MonitorMySolarEntry) -> None:
         """Update listener, called when the config entry options are changed."""
         await hass.config_entries.async_reload(entry.entry_id)
@@ -171,7 +171,7 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
             data = json.loads(payload)
             bank_name = topic.split('/')[-1]  # Gets 'inputbank1', 'holdbank2', etc.
             self.hass.bus.async_fire(f"{DOMAIN}_bank_updated", {"bank_name": bank_name})
-            
+
         except ValueError:
             LOGGER.error("Invalid JSON payload received")
             return
@@ -186,7 +186,7 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
         if isinstance(data, dict):
             if "Serialnumber" in data:
                 serial_number = data.get("Serialnumber")
-                
+
             if "payload" in data:
                 # New format with data wrapper
                 payload_data = data["payload"]
@@ -219,7 +219,7 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
             LOGGER.debug(f"Processing fault data: {fault_data}")
             fault_value = fault_data.get("value", 0)
             entity_id = f"sensor.{self.dongle_id}_fault_status"
-            
+
             if fault_value == 0:
                 self.entities[entity_id] = {
                     "value": 0,
@@ -240,7 +240,7 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
             LOGGER.debug(f"Processing warning data: {warning_data}")
             warning_value = warning_data.get("value", 0)
             entity_id = f"sensor.{self.dongle_id}_warning_status"
-            
+
             if warning_value == 0:
                 self.entities[entity_id] = {
                     "value": 0,

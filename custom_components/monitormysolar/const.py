@@ -18,11 +18,23 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
+from homeassistant.const import Platform
 
-Logger: Logger = getLogger(__package__)
+LOGGER: Logger = getLogger(__package__)
 
 # Domain for the integration
 DOMAIN = "monitormysolar"
+
+PLATFORMS = [
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+    Platform.SWITCH,
+    Platform.NUMBER,
+    Platform.TIME,
+    Platform.SELECT,
+    Platform.BUTTON,
+    Platform.UPDATE,
+]
 
 
 FIRMWARE_CODES = {

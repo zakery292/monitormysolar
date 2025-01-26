@@ -47,7 +47,6 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
             name="MonitorySolar Coordinator",
             setup_method=self.async_setup
         )
-        self.async_refresh()
 
     @cached_property
     def dongle_id(self) -> str:
@@ -73,7 +72,7 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
                 data = json.loads(msg.payload)
                 firmware_code = data.get("FWCode")
                 if firmware_code:
-                    self.firmware_code = firmware_code
+                    self._firmware_code = firmware_code
                     LOGGER.debug(f"Firmware code received: {self.firmware_code}")
                     self.hass.config_entries.async_update_entry(
                         self.entry, data={**self.entry.data, "firmware_code": firmware_code}
@@ -145,6 +144,8 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
 
     async def process_status_message(self, payload):
         """Process incoming status MQTT message and update the status sensor."""
+        if payload is None or len(payload.strip()) == 0:
+            return
         try:
             data = json.loads(payload)
         except ValueError:
@@ -164,6 +165,8 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
 
     async def process_message(self, topic, payload):
         """Process incoming MQTT message and update entity states."""
+        if payload is None or len(payload.strip()) == 0:
+            return
         try:
             data = json.loads(payload)
             bank_name = topic.split('/')[-1]  # Gets 'inputbank1', 'holdbank2', etc.
@@ -276,20 +279,20 @@ class MonitorMySolar(DataUpdateCoordinator[None]):
             return "sensor"
 
         entity_id_suffix_lower = entity_id_suffix.lower()
-        LOGGER.debug(f"Looking for entity_id_suffix '{entity_id_suffix_lower}' in brand '{self.inverter_brand}'.")
+        #LOGGER.debug(f"Looking for entity_id_suffix '{entity_id_suffix_lower}' in brand '{self.inverter_brand}'.")
 
         for entity_type in ["sensor", "switch", "number", "time", "time_hhmm", "button", "select"]:
             if entity_type in brand_entities:
                 for bank_name, entities in brand_entities[entity_type].items():
-                    LOGGER.debug(f"Checking in bank '{bank_name}' for entity_type '{entity_type}'.")
+                    #LOGGER.debug(f"Checking in bank '{bank_name}' for entity_type '{entity_type}'.")
                     for entity in entities:
                         unique_id_lower = entity["unique_id"].lower()
                         # LOGGER.debug(f"Comparing with unique_id '{unique_id_lower}' for entity_type '{entity_type}'.")
                         if unique_id_lower == entity_id_suffix_lower:
                             if entity_type == "time_hhmm":
-                                LOGGER.debug(f"Matched entity_id_suffix '{entity_id_suffix_lower}' to entity type 'time'.")
+                                #LOGGER.debug(f"Matched entity_id_suffix '{entity_id_suffix_lower}' to entity type 'time'.")
                                 return "time"
-                            LOGGER.debug(f"Matched entity_id_suffix '{entity_id_suffix_lower}' to entity type '{entity_type}'.")
+                            #LOGGER.debug(f"Matched entity_id_suffix '{entity_id_suffix_lower}' to entity type '{entity_type}'.")
                             return entity_type
 
         LOGGER.debug(f"Could not match entity_id_suffix '{entity_id_suffix_lower}'. Defaulting to 'sensor'.")

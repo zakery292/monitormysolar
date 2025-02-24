@@ -169,7 +169,7 @@ class InverterSensor(MonitorMySolarEntity, SensorEntity):
                 self.async_write_ha_state()
         else:
             LOGGER.warning(f"entity {self.entity_id} key not found")
-        
+
 
 
 class StatusSensor(MonitorMySolarEntity, SensorEntity):
@@ -525,7 +525,7 @@ class FaultWarningSensor(MonitorMySolarEntity, SensorEntity):
             "name": f"Inverter {self._dongle_id}",
             "manufacturer": f"{self._manufacturer}",
         }
-   
+
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -694,7 +694,7 @@ class CalculatedSensor(MonitorMySolarEntity, SensorEntity):
                     sensor_name = source_entity_ids[entity_id]
                     self._sensor_values[sensor_name] = float(value)
 
-                    # LOGGER.warning(
+                    # LOGGER.debug(
                     #     f"Updated {sensor_name} value to {value} for calculated sensor {self.entity_id}"
                     # )
 

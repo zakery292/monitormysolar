@@ -63,7 +63,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: MonitorMySolarEntry, asy
         LOGGER.debug(f"Adding {len(entities)} update entities")
         async_add_entities(entities)
     else:
-        LOGGER.warning("No update entities were created")
+        LOGGER.debug("No update entities were created")
 
 class InverterUpdate(MonitorMySolarEntity, UpdateEntity):
     """Update entity for MonitorMySolar."""
@@ -73,7 +73,7 @@ class InverterUpdate(MonitorMySolarEntity, UpdateEntity):
     _attr_device_class = UpdateDeviceClass.FIRMWARE
 
     def __init__(
-        self, 
+        self,
         hass: HomeAssistant,
         entry: MonitorMySolarEntry,
         name: str,
@@ -94,7 +94,7 @@ class InverterUpdate(MonitorMySolarEntity, UpdateEntity):
         self.entity_id = f"update.{self._device_id}_{unique_id.lower()}"
 
         super().__init__(self.coordinator)
-        
+
         # Set initial versions
         self._attr_installed_version = self._get_installed_version()
         self._attr_latest_version = self._get_latest_version()
@@ -118,7 +118,7 @@ class InverterUpdate(MonitorMySolarEntity, UpdateEntity):
     def unique_id(self):
         """Return a unique ID."""
         return self._unique_id
-    
+
     def _get_installed_version(self) -> str:
         """Get current installed version from domain data."""
         if self._version_key == "UI_VERSION":
@@ -147,12 +147,12 @@ class InverterUpdate(MonitorMySolarEntity, UpdateEntity):
         changelog = server_versions.get("changelog")
         if not changelog:
             return None
-            
+
         if "UI:" in changelog and "FW:" in changelog:
             parts = changelog.split("FW:")
             ui_part = parts[0].replace("UI:", "").strip()
             fw_part = parts[1].strip()
-            
+
             return ui_part if self._version_key == "UI_VERSION" else fw_part
         return changelog
     @property

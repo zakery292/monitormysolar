@@ -686,6 +686,7 @@ class CalculatedSensor(MonitorMySolarEntity, SensorEntity):
             f"sensor.{self._formatted_id}_{sensor.lower()}": sensor
             for sensor in self._source_sensors
         }
+
         for entity_id in source_entity_ids.keys():
             # Check if this event matches one of our source sensors
              if entity_id in self.coordinator.entities:
@@ -717,6 +718,8 @@ class TemperatureSensor(MonitorMySolarEntity, SensorEntity):
         self.entity_id = f"sensor.{self._device_id}_{self._sensor_type.lower()}"
         self.hass = hass
         self._manufacturer = entry.data.get("inverter_brand")
+
+       
 
         super().__init__(self.coordinator)
 
